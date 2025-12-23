@@ -80,3 +80,7 @@ blob-report/
 *.pem
 
 docker-compose.override.yml
+
+# Local Windows fix scripts
+apps/ui/scripts/vite-deps-fixer.mjs
+fix-vite.cmd
