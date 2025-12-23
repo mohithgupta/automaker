@@ -8,10 +8,10 @@
  * Response: `{ "success": true, "settings": GlobalSettings }`
  */
 
-import type { Request, Response } from "express";
-import type { SettingsService } from "../../../services/settings-service.js";
-import type { GlobalSettings } from "../../../types/settings.js";
-import { getErrorMessage, logError } from "../common.js";
+import type { Request, Response } from 'express';
+import type { SettingsService } from '../../../services/settings-service.js';
+import type { GlobalSettings } from '../../../types/settings.js';
+import { getErrorMessage, logError } from '../common.js';
 
 /**
  * Create handler factory for PUT /api/settings/global
@@ -24,10 +24,10 @@ export function createUpdateGlobalHandler(settingsService: SettingsService) {
     try {
       const updates = req.body as Partial<GlobalSettings>;
 
-      if (!updates || typeof updates !== "object") {
+      if (!updates || typeof updates !== 'object') {
         res.status(400).json({
           success: false,
-          error: "Invalid request body - expected settings object",
+          error: 'Invalid request body - expected settings object',
         });
         return;
       }
@@ -39,7 +39,7 @@ export function createUpdateGlobalHandler(settingsService: SettingsService) {
         settings,
       });
     } catch (error) {
-      logError(error, "Update global settings failed");
+      logError(error, 'Update global settings failed');
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

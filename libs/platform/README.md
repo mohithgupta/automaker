@@ -15,6 +15,7 @@ npm install @automaker/platform
 ## Exports
 
 ### Path Management
+
 AutoMaker directory structure utilities.
 
 ```typescript
@@ -29,7 +30,7 @@ import {
   getWorktreesDir,
   getAppSpecPath,
   getBranchTrackingPath,
-  ensureAutomakerDir
+  ensureAutomakerDir,
 } from '@automaker/platform';
 
 // Get AutoMaker directory: /project/.automaker
@@ -49,6 +50,7 @@ await ensureAutomakerDir('/project/path');
 ```
 
 ### Subprocess Management
+
 Spawn and manage subprocesses with JSON-lines output.
 
 ```typescript
@@ -60,18 +62,19 @@ const result = await spawnJSONLProcess({
   args: ['--output', 'jsonl'],
   cwd: '/project/path',
   onLine: (data) => console.log('Received:', data),
-  onError: (error) => console.error('Error:', error)
+  onError: (error) => console.error('Error:', error),
 });
 
 // Spawn regular process
 const output = await spawnProcess({
   command: 'git',
   args: ['status'],
-  cwd: '/project/path'
+  cwd: '/project/path',
 });
 ```
 
 ### Security Validation
+
 Path validation and security checks.
 
 ```typescript
@@ -82,7 +85,7 @@ import {
   getAllowedPaths,
   getAllowedRootDirectory,
   getDataDirectory,
-  PathNotAllowedError
+  PathNotAllowedError,
 } from '@automaker/platform';
 
 // Initialize allowed paths from environment
@@ -116,7 +119,7 @@ import {
   getFeatureDir,
   ensureAutomakerDir,
   spawnJSONLProcess,
-  validatePath
+  validatePath,
 } from '@automaker/platform';
 
 async function executeFeature(projectPath: string, featureId: string) {
@@ -138,7 +141,7 @@ async function executeFeature(projectPath: string, featureId: string) {
       if (data.type === 'progress') {
         console.log('Progress:', data.progress);
       }
-    }
+    },
   });
 
   return result;

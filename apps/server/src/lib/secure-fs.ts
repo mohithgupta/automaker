@@ -3,7 +3,7 @@
  * This file exists for backward compatibility with existing imports
  */
 
-import { secureFs } from "@automaker/platform";
+import { secureFs } from '@automaker/platform';
 
 export const {
   access,

@@ -11,7 +11,7 @@ const path = require('path');
 
 const execAsync = promisify(exec);
 
-exports.default = async function(context) {
+exports.default = async function (context) {
   const { appOutDir, electronPlatformName, arch, packager } = context;
   const electronVersion = packager.config.electronVersion;
 
@@ -33,19 +33,9 @@ exports.default = async function(context) {
       'node_modules'
     );
   } else if (electronPlatformName === 'win32') {
-    serverNodeModulesPath = path.join(
-      appOutDir,
-      'resources',
-      'server',
-      'node_modules'
-    );
+    serverNodeModulesPath = path.join(appOutDir, 'resources', 'server', 'node_modules');
   } else {
-    serverNodeModulesPath = path.join(
-      appOutDir,
-      'resources',
-      'server',
-      'node_modules'
-    );
+    serverNodeModulesPath = path.join(appOutDir, 'resources', 'server', 'node_modules');
   }
 
   try {

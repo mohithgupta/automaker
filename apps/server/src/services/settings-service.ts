@@ -7,8 +7,8 @@
  * - Per-project settings ({projectPath}/.automaker/settings.json)
  */
 
-import { createLogger } from "@automaker/utils";
-import * as secureFs from "../lib/secure-fs.js";
+import { createLogger } from '@automaker/utils';
+import * as secureFs from '../lib/secure-fs.js';
 
 import {
   getGlobalSettingsPath,
@@ -16,7 +16,7 @@ import {
   getProjectSettingsPath,
   ensureDataDir,
   ensureAutomakerDir,
-} from "@automaker/platform";
+} from '@automaker/platform';
 import type {
   GlobalSettings,
   Credentials,
@@ -27,7 +27,7 @@ import type {
   TrashedProjectRef,
   BoardBackgroundSettings,
   WorktreeInfo,
-} from "../types/settings.js";
+} from '../types/settings.js';
 import {
   DEFAULT_GLOBAL_SETTINGS,
   DEFAULT_CREDENTIALS,
@@ -35,9 +35,9 @@ import {
   SETTINGS_VERSION,
   CREDENTIALS_VERSION,
   PROJECT_SETTINGS_VERSION,
-} from "../types/settings.js";
+} from '../types/settings.js';
 
-const logger = createLogger("SettingsService");
+const logger = createLogger('SettingsService');
 
 /**
  * Atomic file write - write to temp file then rename
@@ -47,7 +47,7 @@ async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
   const content = JSON.stringify(data, null, 2);
 
   try {
-    await secureFs.writeFile(tempPath, content, "utf-8");
+    await secureFs.writeFile(tempPath, content, 'utf-8');
     await secureFs.rename(tempPath, filePath);
   } catch (error) {
     // Clean up temp file if it exists
@@ -65,10 +65,10 @@ async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
  */
 async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
   try {
-    const content = (await secureFs.readFile(filePath, "utf-8")) as string;
+    const content = (await secureFs.readFile(filePath, 'utf-8')) as string;
     return JSON.parse(content) as T;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return defaultValue;
     }
     logger.error(`Error reading ${filePath}:`, error);
@@ -128,10 +128,7 @@ export class SettingsService {
    */
   async getGlobalSettings(): Promise<GlobalSettings> {
     const settingsPath = getGlobalSettingsPath(this.dataDir);
-    const settings = await readJsonFile<GlobalSettings>(
-      settingsPath,
-      DEFAULT_GLOBAL_SETTINGS
-    );
+    const settings = await readJsonFile<GlobalSettings>(settingsPath, DEFAULT_GLOBAL_SETTINGS);
 
     // Apply any missing defaults (for backwards compatibility)
     return {
@@ -153,9 +150,7 @@ export class SettingsService {
    * @param updates - Partial GlobalSettings to merge (only provided fields are updated)
    * @returns Promise resolving to complete updated GlobalSettings
    */
-  async updateGlobalSettings(
-    updates: Partial<GlobalSettings>
-  ): Promise<GlobalSettings> {
+  async updateGlobalSettings(updates: Partial<GlobalSettings>): Promise<GlobalSettings> {
     await ensureDataDir(this.dataDir);
     const settingsPath = getGlobalSettingsPath(this.dataDir);
 
@@ -175,7 +170,7 @@ export class SettingsService {
     }
 
     await atomicWriteJson(settingsPath, updated);
-    logger.info("Global settings updated");
+    logger.info('Global settings updated');
 
     return updated;
   }
@@ -207,10 +202,7 @@ export class SettingsService {
    */
   async getCredentials(): Promise<Credentials> {
     const credentialsPath = getCredentialsPath(this.dataDir);
-    const credentials = await readJsonFile<Credentials>(
-      credentialsPath,
-      DEFAULT_CREDENTIALS
-    );
+    const credentials = await readJsonFile<Credentials>(credentialsPath, DEFAULT_CREDENTIALS);
 
     return {
       ...DEFAULT_CREDENTIALS,
@@ -252,7 +244,7 @@ export class SettingsService {
     }
 
     await atomicWriteJson(credentialsPath, updated);
-    logger.info("Credentials updated");
+    logger.info('Credentials updated');
 
     return updated;
   }
@@ -272,7 +264,7 @@ export class SettingsService {
     const credentials = await this.getCredentials();
 
     const maskKey = (key: string): string => {
-      if (!key || key.length < 8) return "";
+      if (!key || key.length < 8) return '';
       return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
     };
 
@@ -312,10 +304,7 @@ export class SettingsService {
    */
   async getProjectSettings(projectPath: string): Promise<ProjectSettings> {
     const settingsPath = getProjectSettingsPath(projectPath);
-    const settings = await readJsonFile<ProjectSettings>(
-      settingsPath,
-      DEFAULT_PROJECT_SETTINGS
-    );
+    const settings = await readJsonFile<ProjectSettings>(settingsPath, DEFAULT_PROJECT_SETTINGS);
 
     return {
       ...DEFAULT_PROJECT_SETTINGS,
@@ -388,11 +377,11 @@ export class SettingsService {
    * @returns Promise resolving to migration result with success status and error list
    */
   async migrateFromLocalStorage(localStorageData: {
-    "automaker-storage"?: string;
-    "automaker-setup"?: string;
-    "worktree-panel-collapsed"?: string;
-    "file-browser-recent-folders"?: string;
-    "automaker:lastProjectDir"?: string;
+    'automaker-storage'?: string;
+    'automaker-setup'?: string;
+    'worktree-panel-collapsed'?: string;
+    'file-browser-recent-folders'?: string;
+    'automaker:lastProjectDir'?: string;
   }): Promise<{
     success: boolean;
     migratedGlobalSettings: boolean;
@@ -408,9 +397,9 @@ export class SettingsService {
     try {
       // Parse the main automaker-storage
       let appState: Record<string, unknown> = {};
-      if (localStorageData["automaker-storage"]) {
+      if (localStorageData['automaker-storage']) {
         try {
-          const parsed = JSON.parse(localStorageData["automaker-storage"]);
+          const parsed = JSON.parse(localStorageData['automaker-storage']);
           appState = parsed.state || parsed;
         } catch (e) {
           errors.push(`Failed to parse automaker-storage: ${e}`);
@@ -419,20 +408,14 @@ export class SettingsService {
 
       // Extract global settings
       const globalSettings: Partial<GlobalSettings> = {
-        theme: (appState.theme as GlobalSettings["theme"]) || "dark",
-        sidebarOpen:
-          appState.sidebarOpen !== undefined
-            ? (appState.sidebarOpen as boolean)
-            : true,
+        theme: (appState.theme as GlobalSettings['theme']) || 'dark',
+        sidebarOpen: appState.sidebarOpen !== undefined ? (appState.sidebarOpen as boolean) : true,
         chatHistoryOpen: (appState.chatHistoryOpen as boolean) || false,
         kanbanCardDetailLevel:
-          (appState.kanbanCardDetailLevel as GlobalSettings["kanbanCardDetailLevel"]) ||
-          "standard",
+          (appState.kanbanCardDetailLevel as GlobalSettings['kanbanCardDetailLevel']) || 'standard',
         maxConcurrency: (appState.maxConcurrency as number) || 3,
         defaultSkipTests:
-          appState.defaultSkipTests !== undefined
-            ? (appState.defaultSkipTests as boolean)
-            : true,
+          appState.defaultSkipTests !== undefined ? (appState.defaultSkipTests as boolean) : true,
         enableDependencyBlocking:
           appState.enableDependencyBlocking !== undefined
             ? (appState.enableDependencyBlocking as boolean)
@@ -440,55 +423,48 @@ export class SettingsService {
         useWorktrees: (appState.useWorktrees as boolean) || false,
         showProfilesOnly: (appState.showProfilesOnly as boolean) || false,
         defaultPlanningMode:
-          (appState.defaultPlanningMode as GlobalSettings["defaultPlanningMode"]) ||
-          "skip",
-        defaultRequirePlanApproval:
-          (appState.defaultRequirePlanApproval as boolean) || false,
-        defaultAIProfileId:
-          (appState.defaultAIProfileId as string | null) || null,
+          (appState.defaultPlanningMode as GlobalSettings['defaultPlanningMode']) || 'skip',
+        defaultRequirePlanApproval: (appState.defaultRequirePlanApproval as boolean) || false,
+        defaultAIProfileId: (appState.defaultAIProfileId as string | null) || null,
         muteDoneSound: (appState.muteDoneSound as boolean) || false,
         enhancementModel:
-          (appState.enhancementModel as GlobalSettings["enhancementModel"]) ||
-          "sonnet",
+          (appState.enhancementModel as GlobalSettings['enhancementModel']) || 'sonnet',
         keyboardShortcuts:
           (appState.keyboardShortcuts as KeyboardShortcuts) ||
           DEFAULT_GLOBAL_SETTINGS.keyboardShortcuts,
         aiProfiles: (appState.aiProfiles as AIProfile[]) || [],
         projects: (appState.projects as ProjectRef[]) || [],
-        trashedProjects:
-          (appState.trashedProjects as TrashedProjectRef[]) || [],
+        trashedProjects: (appState.trashedProjects as TrashedProjectRef[]) || [],
         projectHistory: (appState.projectHistory as string[]) || [],
         projectHistoryIndex: (appState.projectHistoryIndex as number) || -1,
         lastSelectedSessionByProject:
-          (appState.lastSelectedSessionByProject as Record<string, string>) ||
-          {},
+          (appState.lastSelectedSessionByProject as Record<string, string>) || {},
       };
 
       // Add direct localStorage values
-      if (localStorageData["automaker:lastProjectDir"]) {
-        globalSettings.lastProjectDir =
-          localStorageData["automaker:lastProjectDir"];
+      if (localStorageData['automaker:lastProjectDir']) {
+        globalSettings.lastProjectDir = localStorageData['automaker:lastProjectDir'];
       }
 
-      if (localStorageData["file-browser-recent-folders"]) {
+      if (localStorageData['file-browser-recent-folders']) {
         try {
           globalSettings.recentFolders = JSON.parse(
-            localStorageData["file-browser-recent-folders"]
+            localStorageData['file-browser-recent-folders']
           );
         } catch {
           globalSettings.recentFolders = [];
         }
       }
 
-      if (localStorageData["worktree-panel-collapsed"]) {
+      if (localStorageData['worktree-panel-collapsed']) {
         globalSettings.worktreePanelCollapsed =
-          localStorageData["worktree-panel-collapsed"] === "true";
+          localStorageData['worktree-panel-collapsed'] === 'true';
       }
 
       // Save global settings
       await this.updateGlobalSettings(globalSettings);
       migratedGlobalSettings = true;
-      logger.info("Migrated global settings from localStorage");
+      logger.info('Migrated global settings from localStorage');
 
       // Extract and save credentials
       if (appState.apiKeys) {
@@ -499,13 +475,13 @@ export class SettingsService {
         };
         await this.updateCredentials({
           apiKeys: {
-            anthropic: apiKeys.anthropic || "",
-            google: apiKeys.google || "",
-            openai: apiKeys.openai || "",
+            anthropic: apiKeys.anthropic || '',
+            google: apiKeys.google || '',
+            openai: apiKeys.openai || '',
           },
         });
         migratedCredentials = true;
-        logger.info("Migrated credentials from localStorage");
+        logger.info('Migrated credentials from localStorage');
       }
 
       // Migrate per-project settings
@@ -522,14 +498,10 @@ export class SettingsService {
       // Get unique project paths that have per-project settings
       const projectPaths = new Set<string>();
       if (boardBackgroundByProject) {
-        Object.keys(boardBackgroundByProject).forEach((p) =>
-          projectPaths.add(p)
-        );
+        Object.keys(boardBackgroundByProject).forEach((p) => projectPaths.add(p));
       }
       if (currentWorktreeByProject) {
-        Object.keys(currentWorktreeByProject).forEach((p) =>
-          projectPaths.add(p)
-        );
+        Object.keys(currentWorktreeByProject).forEach((p) => projectPaths.add(p));
       }
       if (worktreesByProject) {
         Object.keys(worktreesByProject).forEach((p) => projectPaths.add(p));
@@ -551,17 +523,15 @@ export class SettingsService {
           // Get theme from project object
           const project = projects.find((p) => p.path === projectPath);
           if (project?.theme) {
-            projectSettings.theme = project.theme as ProjectSettings["theme"];
+            projectSettings.theme = project.theme as ProjectSettings['theme'];
           }
 
           if (boardBackgroundByProject?.[projectPath]) {
-            projectSettings.boardBackground =
-              boardBackgroundByProject[projectPath];
+            projectSettings.boardBackground = boardBackgroundByProject[projectPath];
           }
 
           if (currentWorktreeByProject?.[projectPath]) {
-            projectSettings.currentWorktree =
-              currentWorktreeByProject[projectPath];
+            projectSettings.currentWorktree = currentWorktreeByProject[projectPath];
           }
 
           if (worktreesByProject?.[projectPath]) {
@@ -573,15 +543,11 @@ export class SettingsService {
             migratedProjectCount++;
           }
         } catch (e) {
-          errors.push(
-            `Failed to migrate project settings for ${projectPath}: ${e}`
-          );
+          errors.push(`Failed to migrate project settings for ${projectPath}: ${e}`);
         }
       }
 
-      logger.info(
-        `Migration complete: ${migratedProjectCount} projects migrated`
-      );
+      logger.info(`Migration complete: ${migratedProjectCount} projects migrated`);
 
       return {
         success: errors.length === 0,
@@ -591,7 +557,7 @@ export class SettingsService {
         errors,
       };
     } catch (error) {
-      logger.error("Migration failed:", error);
+      logger.error('Migration failed:', error);
       errors.push(`Migration failed: ${error}`);
       return {
         success: false,

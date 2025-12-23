@@ -1,14 +1,12 @@
-
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { useAppStore, type AgentModel } from "@/store/app-store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ImageDropZone } from "@/components/ui/image-drop-zone";
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useAppStore, type AgentModel } from '@/store/app-store';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ImageDropZone } from '@/components/ui/image-drop-zone';
 import {
   Bot,
   Send,
   User,
-  Loader2,
   Sparkles,
   Wrench,
   Trash2,
@@ -18,37 +16,53 @@ import {
   X,
   ImageIcon,
   ChevronDown,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useElectronAgent } from "@/hooks/use-electron-agent";
-import { SessionManager } from "@/components/session-manager";
-import { Markdown } from "@/components/ui/markdown";
-import type { ImageAttachment } from "@/store/app-store";
+  FileText,
+  Square,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useElectronAgent } from '@/hooks/use-electron-agent';
+import { SessionManager } from '@/components/session-manager';
+import { Markdown } from '@/components/ui/markdown';
+import type { ImageAttachment, TextFileAttachment } from '@/store/app-store';
+import {
+  fileToBase64,
+  generateImageId,
+  generateFileId,
+  validateImageFile,
+  validateTextFile,
+  isTextFile,
+  isImageFile,
+  fileToText,
+  getTextFileMimeType,
+  formatFileSize,
+  DEFAULT_MAX_FILE_SIZE,
+  DEFAULT_MAX_FILES,
+} from '@/lib/image-utils';
 import {
   useKeyboardShortcuts,
   useKeyboardShortcutsConfig,
   KeyboardShortcut,
-} from "@/hooks/use-keyboard-shortcuts";
+} from '@/hooks/use-keyboard-shortcuts';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { CLAUDE_MODELS } from "@/components/views/board-view/shared/model-constants";
+} from '@/components/ui/dropdown-menu';
+import { CLAUDE_MODELS } from '@/components/views/board-view/shared/model-constants';
 
 export function AgentView() {
-  const { currentProject, setLastSelectedSession, getLastSelectedSession } =
-    useAppStore();
+  const { currentProject, setLastSelectedSession, getLastSelectedSession } = useAppStore();
   const shortcuts = useKeyboardShortcutsConfig();
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [selectedImages, setSelectedImages] = useState<ImageAttachment[]>([]);
+  const [selectedTextFiles, setSelectedTextFiles] = useState<TextFileAttachment[]>([]);
   const [showImageDropZone, setShowImageDropZone] = useState(false);
   const [currentTool, setCurrentTool] = useState<string | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showSessionManager, setShowSessionManager] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<AgentModel>("sonnet");
+  const [selectedModel, setSelectedModel] = useState<AgentModel>('sonnet');
 
   // Track if initial session has been loaded
   const initialSessionLoadedRef = useRef(false);
@@ -70,9 +84,10 @@ export function AgentView() {
     isConnected,
     sendMessage,
     clearHistory,
+    stopExecution,
     error: agentError,
   } = useElectronAgent({
-    sessionId: currentSessionId || "",
+    sessionId: currentSessionId || '',
     workingDirectory: currentProject?.path,
     model: selectedModel,
     onToolUse: (toolName) => {
@@ -108,10 +123,7 @@ export function AgentView() {
 
     const lastSessionId = getLastSelectedSession(currentProject.path);
     if (lastSessionId) {
-      console.log(
-        "[AgentView] Restoring last selected session:",
-        lastSessionId
-      );
+      console.log('[AgentView] Restoring last selected session:', lastSessionId);
       setCurrentSessionId(lastSessionId);
     }
   }, [currentProject?.path, getLastSelectedSession]);
@@ -122,17 +134,23 @@ export function AgentView() {
   }, [currentProject?.path]);
 
   const handleSend = useCallback(async () => {
-    if ((!input.trim() && selectedImages.length === 0) || isProcessing) return;
+    if (
+      (!input.trim() && selectedImages.length === 0 && selectedTextFiles.length === 0) ||
+      isProcessing
+    )
+      return;
 
     const messageContent = input;
     const messageImages = selectedImages;
+    const messageTextFiles = selectedTextFiles;
 
-    setInput("");
+    setInput('');
     setSelectedImages([]);
+    setSelectedTextFiles([]);
     setShowImageDropZone(false);
 
-    await sendMessage(messageContent, messageImages);
-  }, [input, selectedImages, isProcessing, sendMessage]);
+    await sendMessage(messageContent, messageImages, messageTextFiles);
+  }, [input, selectedImages, selectedTextFiles, isProcessing, sendMessage]);
 
   const handleImagesSelected = useCallback((images: ImageAttachment[]) => {
     setSelectedImages(images);
@@ -142,93 +160,109 @@ export function AgentView() {
     setShowImageDropZone(!showImageDropZone);
   }, [showImageDropZone]);
 
-  // Helper function to convert file to base64
-  const fileToBase64 = useCallback((file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          resolve(reader.result);
-        } else {
-          reject(new Error("Failed to read file as base64"));
-        }
-      };
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
-  }, []);
-
-  // Process dropped files
+  // Process dropped files (images and text files)
   const processDroppedFiles = useCallback(
     async (files: FileList) => {
       if (isProcessing) return;
 
-      const ACCEPTED_IMAGE_TYPES = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "image/webp",
-      ];
-      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-      const MAX_FILES = 5;
-
       const newImages: ImageAttachment[] = [];
+      const newTextFiles: TextFileAttachment[] = [];
       const errors: string[] = [];
 
       for (const file of Array.from(files)) {
-        // Validate file type
-        if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-          errors.push(
-            `${file.name}: Unsupported file type. Please use JPG, PNG, GIF, or WebP.`
-          );
-          continue;
-        }
+        // Check if it's a text file
+        if (isTextFile(file)) {
+          const validation = validateTextFile(file);
+          if (!validation.isValid) {
+            errors.push(validation.error!);
+            continue;
+          }
 
-        // Validate file size
-        if (file.size > MAX_FILE_SIZE) {
-          const maxSizeMB = MAX_FILE_SIZE / (1024 * 1024);
-          errors.push(
-            `${file.name}: File too large. Maximum size is ${maxSizeMB}MB.`
-          );
-          continue;
-        }
+          // Check if we've reached max files
+          const totalFiles =
+            newImages.length +
+            selectedImages.length +
+            newTextFiles.length +
+            selectedTextFiles.length;
+          if (totalFiles >= DEFAULT_MAX_FILES) {
+            errors.push(`Maximum ${DEFAULT_MAX_FILES} files allowed.`);
+            break;
+          }
 
-        // Check if we've reached max files
-        if (newImages.length + selectedImages.length >= MAX_FILES) {
-          errors.push(`Maximum ${MAX_FILES} images allowed.`);
-          break;
+          try {
+            const content = await fileToText(file);
+            const textFileAttachment: TextFileAttachment = {
+              id: generateFileId(),
+              content,
+              mimeType: getTextFileMimeType(file.name),
+              filename: file.name,
+              size: file.size,
+            };
+            newTextFiles.push(textFileAttachment);
+          } catch {
+            errors.push(`${file.name}: Failed to read text file.`);
+          }
         }
+        // Check if it's an image file
+        else if (isImageFile(file)) {
+          const validation = validateImageFile(file, DEFAULT_MAX_FILE_SIZE);
+          if (!validation.isValid) {
+            errors.push(validation.error!);
+            continue;
+          }
 
-        try {
-          const base64 = await fileToBase64(file);
-          const imageAttachment: ImageAttachment = {
-            id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            data: base64,
-            mimeType: file.type,
-            filename: file.name,
-            size: file.size,
-          };
-          newImages.push(imageAttachment);
-        } catch (error) {
-          errors.push(`${file.name}: Failed to process image.`);
+          // Check if we've reached max files
+          const totalFiles =
+            newImages.length +
+            selectedImages.length +
+            newTextFiles.length +
+            selectedTextFiles.length;
+          if (totalFiles >= DEFAULT_MAX_FILES) {
+            errors.push(`Maximum ${DEFAULT_MAX_FILES} files allowed.`);
+            break;
+          }
+
+          try {
+            const base64 = await fileToBase64(file);
+            const imageAttachment: ImageAttachment = {
+              id: generateImageId(),
+              data: base64,
+              mimeType: file.type,
+              filename: file.name,
+              size: file.size,
+            };
+            newImages.push(imageAttachment);
+          } catch {
+            errors.push(`${file.name}: Failed to process image.`);
+          }
+        } else {
+          errors.push(`${file.name}: Unsupported file type. Use images, .txt, or .md files.`);
         }
       }
 
       if (errors.length > 0) {
-        console.warn("Image upload errors:", errors);
+        console.warn('File upload errors:', errors);
       }
 
       if (newImages.length > 0) {
         setSelectedImages((prev) => [...prev, ...newImages]);
       }
+
+      if (newTextFiles.length > 0) {
+        setSelectedTextFiles((prev) => [...prev, ...newTextFiles]);
+      }
     },
-    [isProcessing, selectedImages, fileToBase64]
+    [isProcessing, selectedImages, selectedTextFiles]
   );
 
   // Remove individual image
   const removeImage = useCallback((imageId: string) => {
     setSelectedImages((prev) => prev.filter((img) => img.id !== imageId));
+  }, []);
+
+  // Remove individual text file
+  const removeTextFile = useCallback((fileId: string) => {
+    setSelectedTextFiles((prev) => prev.filter((file) => file.id !== fileId));
   }, []);
 
   // Drag and drop handlers for the input area
@@ -239,7 +273,7 @@ export function AgentView() {
       if (isProcessing || !isConnected) return;
 
       // Check if dragged items contain files
-      if (e.dataTransfer.types.includes("Files")) {
+      if (e.dataTransfer.types.includes('Files')) {
         setIsDragOver(true);
       }
     },
@@ -285,7 +319,7 @@ export function AgentView() {
       if (items && items.length > 0) {
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
-          if (item.kind === "file") {
+          if (item.kind === 'file') {
             const file = item.getAsFile();
             if (file) {
               const dataTransfer = new DataTransfer();
@@ -309,9 +343,9 @@ export function AgentView() {
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
 
-          if (item.kind === "file") {
+          if (item.kind === 'file') {
             const file = item.getAsFile();
-            if (file && file.type.startsWith("image/")) {
+            if (file && file.type.startsWith('image/')) {
               e.preventDefault(); // Prevent default paste of file path
               files.push(file);
             }
@@ -329,14 +363,14 @@ export function AgentView() {
   );
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
   const handleClearChat = async () => {
-    if (!confirm("Are you sure you want to clear this conversation?")) return;
+    if (!confirm('Are you sure you want to clear this conversation?')) return;
     await clearHistory();
   };
 
@@ -347,14 +381,13 @@ export function AgentView() {
 
     const threshold = 50; // 50px threshold for "near bottom"
     const isAtBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight <=
-      threshold;
+      container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
 
     setIsUserAtBottom(isAtBottom);
   }, []);
 
   // Scroll to bottom function
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
@@ -375,7 +408,7 @@ export function AgentView() {
     if (isUserAtBottom && messages.length > 0) {
       // Use a small delay to ensure DOM is updated
       setTimeout(() => {
-        scrollToBottom("smooth");
+        scrollToBottom('smooth');
       }, 100);
     }
   }, [messages, isUserAtBottom, scrollToBottom]);
@@ -385,7 +418,7 @@ export function AgentView() {
     if (currentSessionId && messages.length > 0) {
       // Scroll immediately without animation when switching sessions
       setTimeout(() => {
-        scrollToBottom("auto");
+        scrollToBottom('auto');
         setIsUserAtBottom(true);
       }, 100);
     }
@@ -414,7 +447,7 @@ export function AgentView() {
             quickCreateSessionRef.current();
           }
         },
-        description: "Create new session",
+        description: 'Create new session',
       });
     }
 
@@ -434,9 +467,7 @@ export function AgentView() {
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
             <Sparkles className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-xl font-semibold mb-3 text-foreground">
-            No Project Selected
-          </h2>
+          <h2 className="text-xl font-semibold mb-3 text-foreground">No Project Selected</h2>
           <p className="text-muted-foreground leading-relaxed">
             Open or create a project to start working with the AI agent.
           </p>
@@ -450,8 +481,8 @@ export function AgentView() {
     messages.length === 0
       ? [
           {
-            id: "welcome",
-            role: "assistant" as const,
+            id: 'welcome',
+            role: 'assistant' as const,
             content:
               "Hello! I'm the Automaker Agent. I can help you build software autonomously. I can read and modify files in this project, run commands, and execute tests. What would you like to create today?",
             timestamp: new Date().toISOString(),
@@ -460,10 +491,7 @@ export function AgentView() {
       : messages;
 
   return (
-    <div
-      className="flex-1 flex overflow-hidden bg-background"
-      data-testid="agent-view"
-    >
+    <div className="flex-1 flex overflow-hidden bg-background" data-testid="agent-view">
       {/* Session Manager Sidebar */}
       {showSessionManager && currentProject && (
         <div className="w-80 border-r border-border flex-shrink-0 bg-card/50">
@@ -498,12 +526,10 @@ export function AgentView() {
               <Bot className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-foreground">
-                AI Agent
-              </h1>
+              <h1 className="text-lg font-semibold text-foreground">AI Agent</h1>
               <p className="text-sm text-muted-foreground">
                 {currentProject.name}
-                {currentSessionId && !isConnected && " - Connecting..."}
+                {currentSessionId && !isConnected && ' - Connecting...'}
               </p>
             </div>
           </div>
@@ -521,7 +547,10 @@ export function AgentView() {
                   data-testid="model-selector"
                 >
                   <Bot className="w-3.5 h-3.5" />
-                  {CLAUDE_MODELS.find((m) => m.id === selectedModel)?.label.replace("Claude ", "") || "Sonnet"}
+                  {CLAUDE_MODELS.find((m) => m.id === selectedModel)?.label.replace(
+                    'Claude ',
+                    ''
+                  ) || 'Sonnet'}
                   <ChevronDown className="w-3 h-3 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
@@ -530,17 +559,12 @@ export function AgentView() {
                   <DropdownMenuItem
                     key={model.id}
                     onClick={() => setSelectedModel(model.id)}
-                    className={cn(
-                      "cursor-pointer",
-                      selectedModel === model.id && "bg-accent"
-                    )}
+                    className={cn('cursor-pointer', selectedModel === model.id && 'bg-accent')}
                     data-testid={`model-option-${model.id}`}
                   >
                     <div className="flex flex-col">
                       <span className="font-medium">{model.label}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {model.description}
-                      </span>
+                      <span className="text-xs text-muted-foreground">{model.description}</span>
                     </div>
                   </DropdownMenuItem>
                 ))}
@@ -554,9 +578,7 @@ export function AgentView() {
               </div>
             )}
             {agentError && (
-              <span className="text-xs text-destructive font-medium">
-                {agentError}
-              </span>
+              <span className="text-xs text-destructive font-medium">{agentError}</span>
             )}
             {currentSessionId && messages.length > 0 && (
               <Button
@@ -583,9 +605,7 @@ export function AgentView() {
               <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-6">
                 <Bot className="w-8 h-8 text-muted-foreground" />
               </div>
-              <h2 className="text-lg font-semibold mb-3 text-foreground">
-                No Session Selected
-              </h2>
+              <h2 className="text-lg font-semibold mb-3 text-foreground">No Session Selected</h2>
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                 Create or select a session to start chatting with the AI agent
               </p>
@@ -595,7 +615,7 @@ export function AgentView() {
                 className="gap-2"
               >
                 <PanelLeft className="w-4 h-4" />
-                {showSessionManager ? "View" : "Show"} Sessions
+                {showSessionManager ? 'View' : 'Show'} Sessions
               </Button>
             </div>
           </div>
@@ -610,20 +630,20 @@ export function AgentView() {
               <div
                 key={message.id}
                 className={cn(
-                  "flex gap-4 max-w-4xl",
-                  message.role === "user" ? "flex-row-reverse ml-auto" : ""
+                  'flex gap-4 max-w-4xl',
+                  message.role === 'user' ? 'flex-row-reverse ml-auto' : ''
                 )}
               >
                 {/* Avatar */}
                 <div
                   className={cn(
-                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
-                    message.role === "assistant"
-                      ? "bg-primary/10 ring-1 ring-primary/20"
-                      : "bg-muted ring-1 ring-border"
+                    'w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm',
+                    message.role === 'assistant'
+                      ? 'bg-primary/10 ring-1 ring-primary/20'
+                      : 'bg-muted ring-1 ring-border'
                   )}
                 >
-                  {message.role === "assistant" ? (
+                  {message.role === 'assistant' ? (
                     <Bot className="w-4 h-4 text-primary" />
                   ) : (
                     <User className="w-4 h-4 text-muted-foreground" />
@@ -633,76 +653,67 @@ export function AgentView() {
                 {/* Message Bubble */}
                 <div
                   className={cn(
-                    "flex-1 max-w-[85%] rounded-2xl px-4 py-3 shadow-sm",
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border border-border"
+                    'flex-1 max-w-[85%] rounded-2xl px-4 py-3 shadow-sm',
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-card border border-border'
                   )}
                 >
-                  {message.role === "assistant" ? (
+                  {message.role === 'assistant' ? (
                     <Markdown className="text-sm text-foreground prose-p:leading-relaxed prose-headings:text-foreground prose-strong:text-foreground prose-code:text-primary prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded">
                       {message.content}
                     </Markdown>
                   ) : (
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                      {message.content}
-                    </p>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                   )}
 
                   {/* Display attached images for user messages */}
-                  {message.role === "user" &&
-                    message.images &&
-                    message.images.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        <div className="flex items-center gap-1.5 text-xs text-primary-foreground/80">
-                          <ImageIcon className="w-3 h-3" />
-                          <span>
-                            {message.images.length} image
-                            {message.images.length > 1 ? "s" : ""} attached
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {message.images.map((image, index) => {
-                            // Construct proper data URL from base64 data and mime type
-                            const dataUrl = image.data.startsWith("data:")
-                              ? image.data
-                              : `data:${image.mimeType || "image/png"};base64,${
-                                  image.data
-                                }`;
-                            return (
-                              <div
-                                key={image.id || `img-${index}`}
-                                className="relative group rounded-lg overflow-hidden border border-primary-foreground/20 bg-primary-foreground/10"
-                              >
-                                <img
-                                  src={dataUrl}
-                                  alt={
-                                    image.filename ||
-                                    `Attached image ${index + 1}`
-                                  }
-                                  className="w-20 h-20 object-cover hover:opacity-90 transition-opacity"
-                                />
-                                <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1.5 py-0.5 text-[9px] text-white truncate">
-                                  {image.filename || `Image ${index + 1}`}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                  {message.role === 'user' && message.images && message.images.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center gap-1.5 text-xs text-primary-foreground/80">
+                        <ImageIcon className="w-3 h-3" />
+                        <span>
+                          {message.images.length} image
+                          {message.images.length > 1 ? 's' : ''} attached
+                        </span>
                       </div>
-                    )}
+                      <div className="flex flex-wrap gap-2">
+                        {message.images.map((image, index) => {
+                          // Construct proper data URL from base64 data and mime type
+                          const dataUrl = image.data.startsWith('data:')
+                            ? image.data
+                            : `data:${image.mimeType || 'image/png'};base64,${image.data}`;
+                          return (
+                            <div
+                              key={image.id || `img-${index}`}
+                              className="relative group rounded-lg overflow-hidden border border-primary-foreground/20 bg-primary-foreground/10"
+                            >
+                              <img
+                                src={dataUrl}
+                                alt={image.filename || `Attached image ${index + 1}`}
+                                className="w-20 h-20 object-cover hover:opacity-90 transition-opacity"
+                              />
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1.5 py-0.5 text-[9px] text-white truncate">
+                                {image.filename || `Image ${index + 1}`}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <p
                     className={cn(
-                      "text-[11px] mt-2 font-medium",
-                      message.role === "user"
-                        ? "text-primary-foreground/70"
-                        : "text-muted-foreground"
+                      'text-[11px] mt-2 font-medium',
+                      message.role === 'user'
+                        ? 'text-primary-foreground/70'
+                        : 'text-muted-foreground'
                     )}
                   >
                     {new Date(message.timestamp).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
+                      hour: '2-digit',
+                      minute: '2-digit',
                     })}
                   </p>
                 </div>
@@ -720,20 +731,18 @@ export function AgentView() {
                     <div className="flex items-center gap-1">
                       <span
                         className="w-2 h-2 rounded-full bg-primary animate-pulse"
-                        style={{ animationDelay: "0ms" }}
+                        style={{ animationDelay: '0ms' }}
                       />
                       <span
                         className="w-2 h-2 rounded-full bg-primary animate-pulse"
-                        style={{ animationDelay: "150ms" }}
+                        style={{ animationDelay: '150ms' }}
                       />
                       <span
                         className="w-2 h-2 rounded-full bg-primary animate-pulse"
-                        style={{ animationDelay: "300ms" }}
+                        style={{ animationDelay: '300ms' }}
                       />
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      Thinking...
-                    </span>
+                    <span className="text-sm text-muted-foreground">Thinking...</span>
                   </div>
                 </div>
               </div>
@@ -755,16 +764,19 @@ export function AgentView() {
               />
             )}
 
-            {/* Selected Images Preview - only show when ImageDropZone is hidden to avoid duplicate display */}
-            {selectedImages.length > 0 && !showImageDropZone && (
+            {/* Selected Files Preview - only show when ImageDropZone is hidden to avoid duplicate display */}
+            {(selectedImages.length > 0 || selectedTextFiles.length > 0) && !showImageDropZone && (
               <div className="mb-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-foreground">
-                    {selectedImages.length} image
-                    {selectedImages.length > 1 ? "s" : ""} attached
+                    {selectedImages.length + selectedTextFiles.length} file
+                    {selectedImages.length + selectedTextFiles.length > 1 ? 's' : ''} attached
                   </p>
                   <button
-                    onClick={() => setSelectedImages([])}
+                    onClick={() => {
+                      setSelectedImages([]);
+                      setSelectedTextFiles([]);
+                    }}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                     disabled={isProcessing}
                   >
@@ -772,6 +784,7 @@ export function AgentView() {
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {/* Image attachments */}
                   {selectedImages.map((image) => (
                     <div
                       key={image.id}
@@ -808,6 +821,35 @@ export function AgentView() {
                       )}
                     </div>
                   ))}
+                  {/* Text file attachments */}
+                  {selectedTextFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="group relative rounded-lg border border-border bg-muted/30 p-2 flex items-center gap-2 hover:border-primary/30 transition-colors"
+                    >
+                      {/* File icon */}
+                      <div className="w-8 h-8 rounded-md bg-muted flex-shrink-0 flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      {/* File info */}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-foreground truncate max-w-24">
+                          {file.filename}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {formatFileSize(file.size)}
+                        </p>
+                      </div>
+                      {/* Remove button */}
+                      <button
+                        onClick={() => removeTextFile(file.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                        disabled={isProcessing}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -815,8 +857,8 @@ export function AgentView() {
             {/* Text Input and Controls */}
             <div
               className={cn(
-                "flex gap-2 transition-all duration-200 rounded-xl p-1",
-                isDragOver && "bg-primary/5 ring-2 ring-primary/30"
+                'flex gap-2 transition-all duration-200 rounded-xl p-1',
+                isDragOver && 'bg-primary/5 ring-2 ring-primary/30'
               )}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
@@ -827,9 +869,7 @@ export function AgentView() {
                 <Input
                   ref={inputRef}
                   placeholder={
-                    isDragOver
-                      ? "Drop your images here..."
-                      : "Describe what you want to build..."
+                    isDragOver ? 'Drop your files here...' : 'Describe what you want to build...'
                   }
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -838,16 +878,17 @@ export function AgentView() {
                   disabled={isProcessing || !isConnected}
                   data-testid="agent-input"
                   className={cn(
-                    "h-11 bg-background border-border rounded-xl pl-4 pr-20 text-sm transition-all",
-                    "focus:ring-2 focus:ring-primary/20 focus:border-primary/50",
-                    selectedImages.length > 0 && "border-primary/30",
-                    isDragOver && "border-primary bg-primary/5"
+                    'h-11 bg-background border-border rounded-xl pl-4 pr-20 text-sm transition-all',
+                    'focus:ring-2 focus:ring-primary/20 focus:border-primary/50',
+                    (selectedImages.length > 0 || selectedTextFiles.length > 0) &&
+                      'border-primary/30',
+                    isDragOver && 'border-primary bg-primary/5'
                   )}
                 />
-                {selectedImages.length > 0 && !isDragOver && (
+                {(selectedImages.length > 0 || selectedTextFiles.length > 0) && !isDragOver && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-medium">
-                    {selectedImages.length} image
-                    {selectedImages.length > 1 ? "s" : ""}
+                    {selectedImages.length + selectedTextFiles.length} file
+                    {selectedImages.length + selectedTextFiles.length > 1 ? 's' : ''}
                   </div>
                 )}
                 {isDragOver && (
@@ -858,58 +899,61 @@ export function AgentView() {
                 )}
               </div>
 
-              {/* Image Attachment Button */}
+              {/* File Attachment Button */}
               <Button
                 variant="outline"
                 size="icon"
                 onClick={toggleImageDropZone}
                 disabled={isProcessing || !isConnected}
                 className={cn(
-                  "h-11 w-11 rounded-xl border-border",
-                  showImageDropZone &&
-                    "bg-primary/10 text-primary border-primary/30",
-                  selectedImages.length > 0 && "border-primary/30 text-primary"
+                  'h-11 w-11 rounded-xl border-border',
+                  showImageDropZone && 'bg-primary/10 text-primary border-primary/30',
+                  (selectedImages.length > 0 || selectedTextFiles.length > 0) &&
+                    'border-primary/30 text-primary'
                 )}
-                title="Attach images"
+                title="Attach files (images, .txt, .md)"
               >
                 <Paperclip className="w-4 h-4" />
               </Button>
 
-              {/* Send Button */}
-              <Button
-                onClick={handleSend}
-                disabled={
-                  (!input.trim() && selectedImages.length === 0) ||
-                  isProcessing ||
-                  !isConnected
-                }
-                className="h-11 px-4 rounded-xl"
-                data-testid="send-message"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
+              {/* Send / Stop Button */}
+              {isProcessing ? (
+                <Button
+                  onClick={stopExecution}
+                  disabled={!isConnected}
+                  className="h-11 px-4 rounded-xl"
+                  variant="destructive"
+                  data-testid="stop-agent"
+                  title="Stop generation"
+                >
+                  <Square className="w-4 h-4 fill-current" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSend}
+                  disabled={
+                    (!input.trim() &&
+                      selectedImages.length === 0 &&
+                      selectedTextFiles.length === 0) ||
+                    !isConnected
+                  }
+                  className="h-11 px-4 rounded-xl"
+                  data-testid="send-message"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              )}
             </div>
 
             {/* Keyboard hint */}
             <p className="text-[11px] text-muted-foreground mt-2 text-center">
-              Press{" "}
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">
-                Enter
-              </kbd>{" "}
-              to send
+              Press{' '}
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">Enter</kbd> to
+              send
             </p>
           </div>
         )}
       </div>
     </div>
   );
-}
-
-// Helper function to format file size
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }

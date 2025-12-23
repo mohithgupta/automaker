@@ -9,8 +9,8 @@
  * Directory creation is handled separately by ensure* functions.
  */
 
-import * as secureFs from "./secure-fs.js";
-import path from "path";
+import * as secureFs from './secure-fs.js';
+import path from 'path';
 
 /**
  * Get the automaker data directory root for a project
@@ -22,7 +22,7 @@ import path from "path";
  * @returns Absolute path to {projectPath}/.automaker
  */
 export function getAutomakerDir(projectPath: string): string {
-  return path.join(projectPath, ".automaker");
+  return path.join(projectPath, '.automaker');
 }
 
 /**
@@ -34,7 +34,7 @@ export function getAutomakerDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.automaker/features
  */
 export function getFeaturesDir(projectPath: string): string {
-  return path.join(getAutomakerDir(projectPath), "features");
+  return path.join(getAutomakerDir(projectPath), 'features');
 }
 
 /**
@@ -59,11 +59,8 @@ export function getFeatureDir(projectPath: string, featureId: string): string {
  * @param featureId - Feature identifier
  * @returns Absolute path to {projectPath}/.automaker/features/{featureId}/images
  */
-export function getFeatureImagesDir(
-  projectPath: string,
-  featureId: string
-): string {
-  return path.join(getFeatureDir(projectPath, featureId), "images");
+export function getFeatureImagesDir(projectPath: string, featureId: string): string {
+  return path.join(getFeatureDir(projectPath, featureId), 'images');
 }
 
 /**
@@ -75,7 +72,7 @@ export function getFeatureImagesDir(
  * @returns Absolute path to {projectPath}/.automaker/board
  */
 export function getBoardDir(projectPath: string): string {
-  return path.join(getAutomakerDir(projectPath), "board");
+  return path.join(getAutomakerDir(projectPath), 'board');
 }
 
 /**
@@ -87,7 +84,7 @@ export function getBoardDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.automaker/images
  */
 export function getImagesDir(projectPath: string): string {
-  return path.join(getAutomakerDir(projectPath), "images");
+  return path.join(getAutomakerDir(projectPath), 'images');
 }
 
 /**
@@ -99,7 +96,7 @@ export function getImagesDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.automaker/context
  */
 export function getContextDir(projectPath: string): string {
-  return path.join(getAutomakerDir(projectPath), "context");
+  return path.join(getAutomakerDir(projectPath), 'context');
 }
 
 /**
@@ -111,7 +108,7 @@ export function getContextDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.automaker/worktrees
  */
 export function getWorktreesDir(projectPath: string): string {
-  return path.join(getAutomakerDir(projectPath), "worktrees");
+  return path.join(getAutomakerDir(projectPath), 'worktrees');
 }
 
 /**
@@ -123,7 +120,7 @@ export function getWorktreesDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.automaker/app_spec.txt
  */
 export function getAppSpecPath(projectPath: string): string {
-  return path.join(getAutomakerDir(projectPath), "app_spec.txt");
+  return path.join(getAutomakerDir(projectPath), 'app_spec.txt');
 }
 
 /**
@@ -135,7 +132,7 @@ export function getAppSpecPath(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.automaker/active-branches.json
  */
 export function getBranchTrackingPath(projectPath: string): string {
-  return path.join(getAutomakerDir(projectPath), "active-branches.json");
+  return path.join(getAutomakerDir(projectPath), 'active-branches.json');
 }
 
 /**
@@ -172,7 +169,7 @@ export async function ensureAutomakerDir(projectPath: string): Promise<string> {
  * @returns Absolute path to {dataDir}/settings.json
  */
 export function getGlobalSettingsPath(dataDir: string): string {
-  return path.join(dataDir, "settings.json");
+  return path.join(dataDir, 'settings.json');
 }
 
 /**
@@ -185,7 +182,7 @@ export function getGlobalSettingsPath(dataDir: string): string {
  * @returns Absolute path to {dataDir}/credentials.json
  */
 export function getCredentialsPath(dataDir: string): string {
-  return path.join(dataDir, "credentials.json");
+  return path.join(dataDir, 'credentials.json');
 }
 
 /**
@@ -198,7 +195,7 @@ export function getCredentialsPath(dataDir: string): string {
  * @returns Absolute path to {projectPath}/.automaker/settings.json
  */
 export function getProjectSettingsPath(projectPath: string): string {
-  return path.join(getAutomakerDir(projectPath), "settings.json");
+  return path.join(getAutomakerDir(projectPath), 'settings.json');
 }
 
 /**

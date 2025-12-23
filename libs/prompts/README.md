@@ -32,7 +32,7 @@ import {
   IMPROVE_SYSTEM_PROMPT,
   TECHNICAL_SYSTEM_PROMPT,
   SIMPLIFY_SYSTEM_PROMPT,
-  ACCEPTANCE_SYSTEM_PROMPT
+  ACCEPTANCE_SYSTEM_PROMPT,
 } from '@automaker/prompts';
 
 console.log(IMPROVE_SYSTEM_PROMPT); // Full system prompt for improve mode
@@ -50,7 +50,7 @@ import { getEnhancementPrompt } from '@automaker/prompts';
 const result = getEnhancementPrompt('improve', 'make app faster');
 
 console.log(result.systemPrompt); // System instructions for improve mode
-console.log(result.userPrompt);   // User prompt with examples and input
+console.log(result.userPrompt); // User prompt with examples and input
 ```
 
 #### `getSystemPrompt(mode)`
@@ -122,7 +122,7 @@ async function enhanceDescription(description: string, mode: string) {
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1024,
     system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }]
+    messages: [{ role: 'user', content: userPrompt }],
   });
 
   return response.content[0].text;
@@ -187,7 +187,7 @@ app.post('/api/enhance', async (req, res) => {
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }]
+      messages: [{ role: 'user', content: userPrompt }],
     });
 
     logger.info(`Enhanced with mode: ${mode}`);
@@ -207,6 +207,7 @@ Transforms vague or unclear requests into clear, actionable specifications.
 
 **Before:** "make app faster"
 **After:** "Optimize application performance by:
+
 1. Profiling code to identify bottlenecks
 2. Implementing caching for frequently accessed data
 3. Optimizing database queries..."
@@ -217,6 +218,7 @@ Adds implementation details and technical specifications.
 
 **Before:** "add search"
 **After:** "Implement full-text search using:
+
 - Backend: Elasticsearch or PostgreSQL full-text search
 - Frontend: Debounced search input with loading states
 - API: GET /api/search endpoint with pagination..."
@@ -234,6 +236,7 @@ Adds testable acceptance criteria to feature descriptions.
 
 **Before:** "user login"
 **After:** "User login feature
+
 - User can enter email and password
 - System validates credentials
 - On success: redirect to dashboard

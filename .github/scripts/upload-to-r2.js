@@ -1,15 +1,11 @@
-const {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-} = require("@aws-sdk/client-s3");
-const fs = require("fs");
-const path = require("path");
-const https = require("https");
-const { pipeline } = require("stream/promises");
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const fs = require('fs');
+const path = require('path');
+const https = require('https');
+const { pipeline } = require('stream/promises');
 
 const s3Client = new S3Client({
-  region: "auto",
+  region: 'auto',
   endpoint: process.env.R2_ENDPOINT,
   credentials: {
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
@@ -28,14 +24,14 @@ async function fetchExistingReleases() {
     const response = await s3Client.send(
       new GetObjectCommand({
         Bucket: BUCKET,
-        Key: "releases.json",
+        Key: 'releases.json',
       })
     );
     const body = await response.Body.transformToString();
     return JSON.parse(body);
   } catch (error) {
-    if (error.name === "NoSuchKey" || error.$metadata?.httpStatusCode === 404) {
-      console.log("No existing releases.json found, creating new one");
+    if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+      console.log('No existing releases.json found, creating new one');
       return { latestVersion: null, releases: [] };
     }
     throw error;
@@ -85,7 +81,7 @@ async function checkUrlAccessible(url, maxRetries = 10, initialDelay = 1000) {
               resolve({
                 accessible: false,
                 statusCode,
-                error: "Redirect without location header",
+                error: 'Redirect without location header',
               });
               return;
             }
@@ -93,18 +89,16 @@ async function checkUrlAccessible(url, maxRetries = 10, initialDelay = 1000) {
             return https
               .get(redirectUrl, { timeout: 10000 }, (redirectResponse) => {
                 const redirectStatus = redirectResponse.statusCode;
-                const contentType =
-                  redirectResponse.headers["content-type"] || "";
+                const contentType = redirectResponse.headers['content-type'] || '';
                 // Check if it's actually a file (zip/tar.gz) and not HTML
                 const isFile =
-                  contentType.includes("application/zip") ||
-                  contentType.includes("application/gzip") ||
-                  contentType.includes("application/x-gzip") ||
-                  contentType.includes("application/x-tar") ||
-                  redirectUrl.includes(".zip") ||
-                  redirectUrl.includes(".tar.gz");
-                const isGood =
-                  redirectStatus >= 200 && redirectStatus < 300 && isFile;
+                  contentType.includes('application/zip') ||
+                  contentType.includes('application/gzip') ||
+                  contentType.includes('application/x-gzip') ||
+                  contentType.includes('application/x-tar') ||
+                  redirectUrl.includes('.zip') ||
+                  redirectUrl.includes('.tar.gz');
+                const isGood = redirectStatus >= 200 && redirectStatus < 300 && isFile;
                 redirectResponse.destroy();
                 resolve({
                   accessible: isGood,
@@ -113,38 +107,38 @@ async function checkUrlAccessible(url, maxRetries = 10, initialDelay = 1000) {
                   contentType,
                 });
               })
-              .on("error", (error) => {
+              .on('error', (error) => {
                 resolve({
                   accessible: false,
                   statusCode,
                   error: error.message,
                 });
               })
-              .on("timeout", function () {
+              .on('timeout', function () {
                 this.destroy();
                 resolve({
                   accessible: false,
                   statusCode,
-                  error: "Timeout following redirect",
+                  error: 'Timeout following redirect',
                 });
               });
           }
 
           // Check if status is good (200-299 range) and it's actually a file
-          const contentType = response.headers["content-type"] || "";
+          const contentType = response.headers['content-type'] || '';
           const isFile =
-            contentType.includes("application/zip") ||
-            contentType.includes("application/gzip") ||
-            contentType.includes("application/x-gzip") ||
-            contentType.includes("application/x-tar") ||
-            url.includes(".zip") ||
-            url.includes(".tar.gz");
+            contentType.includes('application/zip') ||
+            contentType.includes('application/gzip') ||
+            contentType.includes('application/x-gzip') ||
+            contentType.includes('application/x-tar') ||
+            url.includes('.zip') ||
+            url.includes('.tar.gz');
           const isGood = statusCode >= 200 && statusCode < 300 && isFile;
           response.destroy();
           resolve({ accessible: isGood, statusCode, contentType });
         });
 
-        request.on("error", (error) => {
+        request.on('error', (error) => {
           resolve({
             accessible: false,
             statusCode: null,
@@ -152,12 +146,12 @@ async function checkUrlAccessible(url, maxRetries = 10, initialDelay = 1000) {
           });
         });
 
-        request.on("timeout", () => {
+        request.on('timeout', () => {
           request.destroy();
           resolve({
             accessible: false,
             statusCode: null,
-            error: "Request timeout",
+            error: 'Request timeout',
           });
         });
       });
@@ -168,22 +162,14 @@ async function checkUrlAccessible(url, maxRetries = 10, initialDelay = 1000) {
             `✓ URL ${url} is now accessible after ${attempt} retries (status: ${result.statusCode})`
           );
         } else {
-          console.log(
-            `✓ URL ${url} is accessible (status: ${result.statusCode})`
-          );
+          console.log(`✓ URL ${url} is accessible (status: ${result.statusCode})`);
         }
         return result.finalUrl || url; // Return the final URL (after redirects) if available
       } else {
-        const errorMsg = result.error ? ` - ${result.error}` : "";
-        const statusMsg = result.statusCode
-          ? ` (status: ${result.statusCode})`
-          : "";
-        const contentTypeMsg = result.contentType
-          ? ` [content-type: ${result.contentType}]`
-          : "";
-        console.log(
-          `✗ URL ${url} not accessible${statusMsg}${contentTypeMsg}${errorMsg}`
-        );
+        const errorMsg = result.error ? ` - ${result.error}` : '';
+        const statusMsg = result.statusCode ? ` (status: ${result.statusCode})` : '';
+        const contentTypeMsg = result.contentType ? ` [content-type: ${result.contentType}]` : '';
+        console.log(`✗ URL ${url} not accessible${statusMsg}${contentTypeMsg}${errorMsg}`);
       }
     } catch (error) {
       console.log(`✗ URL ${url} check failed: ${error.message}`);
@@ -191,9 +177,7 @@ async function checkUrlAccessible(url, maxRetries = 10, initialDelay = 1000) {
 
     if (attempt < maxRetries - 1) {
       const delay = initialDelay * Math.pow(2, attempt);
-      console.log(
-        `  Retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`
-      );
+      console.log(`  Retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
@@ -207,12 +191,7 @@ async function downloadFromGitHub(url, outputPath) {
       const statusCode = response.statusCode;
 
       // Follow redirects (all redirect types)
-      if (
-        statusCode === 301 ||
-        statusCode === 302 ||
-        statusCode === 307 ||
-        statusCode === 308
-      ) {
+      if (statusCode === 301 || statusCode === 302 || statusCode === 307 || statusCode === 308) {
         const redirectUrl = response.headers.location;
         response.destroy();
         if (!redirectUrl) {
@@ -220,39 +199,33 @@ async function downloadFromGitHub(url, outputPath) {
           return;
         }
         // Resolve relative redirects
-        const finalRedirectUrl = redirectUrl.startsWith("http")
+        const finalRedirectUrl = redirectUrl.startsWith('http')
           ? redirectUrl
           : new URL(redirectUrl, url).href;
         console.log(`  Following redirect: ${finalRedirectUrl}`);
-        return downloadFromGitHub(finalRedirectUrl, outputPath)
-          .then(resolve)
-          .catch(reject);
+        return downloadFromGitHub(finalRedirectUrl, outputPath).then(resolve).catch(reject);
       }
 
       if (statusCode !== 200) {
         response.destroy();
-        reject(
-          new Error(
-            `Failed to download ${url}: ${statusCode} ${response.statusMessage}`
-          )
-        );
+        reject(new Error(`Failed to download ${url}: ${statusCode} ${response.statusMessage}`));
         return;
       }
 
       const fileStream = fs.createWriteStream(outputPath);
       response.pipe(fileStream);
-      fileStream.on("finish", () => {
+      fileStream.on('finish', () => {
         fileStream.close();
         resolve();
       });
-      fileStream.on("error", (error) => {
+      fileStream.on('error', (error) => {
         response.destroy();
         reject(error);
       });
     });
 
-    request.on("error", reject);
-    request.on("timeout", () => {
+    request.on('error', reject);
+    request.on('timeout', () => {
       request.destroy();
       reject(new Error(`Request timeout for ${url}`));
     });
@@ -260,8 +233,8 @@ async function downloadFromGitHub(url, outputPath) {
 }
 
 async function main() {
-  const artifactsDir = "artifacts";
-  const tempDir = path.join(artifactsDir, "temp");
+  const artifactsDir = 'artifacts';
+  const tempDir = path.join(artifactsDir, 'temp');
 
   // Create temp directory for downloaded GitHub archives
   if (!fs.existsSync(tempDir)) {
@@ -292,40 +265,30 @@ async function main() {
 
   // Find all artifacts
   const artifacts = {
-    windows: findArtifacts(path.join(artifactsDir, "windows-builds"), /\.exe$/),
-    macos: findArtifacts(path.join(artifactsDir, "macos-builds"), /-x64\.dmg$/),
-    macosArm: findArtifacts(
-      path.join(artifactsDir, "macos-builds"),
-      /-arm64\.dmg$/
-    ),
-    linux: findArtifacts(
-      path.join(artifactsDir, "linux-builds"),
-      /\.AppImage$/
-    ),
+    windows: findArtifacts(path.join(artifactsDir, 'windows-builds'), /\.exe$/),
+    macos: findArtifacts(path.join(artifactsDir, 'macos-builds'), /-x64\.dmg$/),
+    macosArm: findArtifacts(path.join(artifactsDir, 'macos-builds'), /-arm64\.dmg$/),
+    linux: findArtifacts(path.join(artifactsDir, 'linux-builds'), /\.AppImage$/),
     sourceZip: [sourceZipPath],
     sourceTarGz: [sourceTarGzPath],
   };
 
-  console.log("Found artifacts:");
+  console.log('Found artifacts:');
   for (const [platform, files] of Object.entries(artifacts)) {
     console.log(
-      `  ${platform}: ${
-        files.length > 0
-          ? files.map((f) => path.basename(f)).join(", ")
-          : "none"
-      }`
+      `  ${platform}: ${files.length > 0 ? files.map((f) => path.basename(f)).join(', ') : 'none'}`
     );
   }
 
   // Upload each artifact to R2
   const assets = {};
   const contentTypes = {
-    windows: "application/x-msdownload",
-    macos: "application/x-apple-diskimage",
-    macosArm: "application/x-apple-diskimage",
-    linux: "application/x-executable",
-    sourceZip: "application/zip",
-    sourceTarGz: "application/gzip",
+    windows: 'application/x-msdownload',
+    macos: 'application/x-apple-diskimage',
+    macosArm: 'application/x-apple-diskimage',
+    linux: 'application/x-executable',
+    sourceZip: 'application/zip',
+    sourceTarGz: 'application/gzip',
   };
 
   for (const [platform, files] of Object.entries(artifacts)) {
@@ -345,11 +308,11 @@ async function main() {
       filename,
       size,
       arch:
-        platform === "macosArm"
-          ? "arm64"
-          : platform === "sourceZip" || platform === "sourceTarGz"
-          ? "source"
-          : "x64",
+        platform === 'macosArm'
+          ? 'arm64'
+          : platform === 'sourceZip' || platform === 'sourceTarGz'
+            ? 'source'
+            : 'x64',
     };
   }
 
@@ -364,9 +327,7 @@ async function main() {
   };
 
   // Remove existing entry for this version if re-running
-  releasesData.releases = releasesData.releases.filter(
-    (r) => r.version !== VERSION
-  );
+  releasesData.releases = releasesData.releases.filter((r) => r.version !== VERSION);
 
   // Prepend new release
   releasesData.releases.unshift(newRelease);
@@ -376,19 +337,19 @@ async function main() {
   await s3Client.send(
     new PutObjectCommand({
       Bucket: BUCKET,
-      Key: "releases.json",
+      Key: 'releases.json',
       Body: JSON.stringify(releasesData, null, 2),
-      ContentType: "application/json",
-      CacheControl: "public, max-age=60",
+      ContentType: 'application/json',
+      CacheControl: 'public, max-age=60',
     })
   );
 
-  console.log("Successfully updated releases.json");
+  console.log('Successfully updated releases.json');
   console.log(`Latest version: ${VERSION}`);
   console.log(`Total releases: ${releasesData.releases.length}`);
 }
 
 main().catch((err) => {
-  console.error("Failed to upload to R2:", err);
+  console.error('Failed to upload to R2:', err);
   process.exit(1);
 });

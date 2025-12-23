@@ -2,9 +2,9 @@
  * POST /agent-output endpoint - Get agent output for a feature
  */
 
-import type { Request, Response } from "express";
-import { FeatureLoader } from "../../../services/feature-loader.js";
-import { getErrorMessage, logError } from "../common.js";
+import type { Request, Response } from 'express';
+import { FeatureLoader } from '../../../services/feature-loader.js';
+import { getErrorMessage, logError } from '../common.js';
 
 export function createAgentOutputHandler(featureLoader: FeatureLoader) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -15,22 +15,17 @@ export function createAgentOutputHandler(featureLoader: FeatureLoader) {
       };
 
       if (!projectPath || !featureId) {
-        res
-          .status(400)
-          .json({
-            success: false,
-            error: "projectPath and featureId are required",
-          });
+        res.status(400).json({
+          success: false,
+          error: 'projectPath and featureId are required',
+        });
         return;
       }
 
-      const content = await featureLoader.getAgentOutput(
-        projectPath,
-        featureId
-      );
+      const content = await featureLoader.getAgentOutput(projectPath, featureId);
       res.json({ success: true, content });
     } catch (error) {
-      logError(error, "Get agent output failed");
+      logError(error, 'Get agent output failed');
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

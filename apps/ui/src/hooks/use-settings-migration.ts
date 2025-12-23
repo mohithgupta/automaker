@@ -17,10 +17,10 @@
  * - syncProjectSettingsToServer: Writes project-specific overrides
  */
 
-import { useEffect, useState, useRef } from "react";
-import { getHttpApiClient } from "@/lib/http-api-client";
-import { isElectron } from "@/lib/electron";
-import { getItem, removeItem } from "@/lib/storage";
+import { useEffect, useState, useRef } from 'react';
+import { getHttpApiClient } from '@/lib/http-api-client';
+import { isElectron } from '@/lib/electron';
+import { getItem, removeItem } from '@/lib/storage';
 
 /**
  * State returned by useSettingsMigration hook
@@ -41,11 +41,11 @@ interface MigrationState {
  * The automaker-storage key is handled specially as it's still used by Zustand.
  */
 const LOCALSTORAGE_KEYS = [
-  "automaker-storage",
-  "automaker-setup",
-  "worktree-panel-collapsed",
-  "file-browser-recent-folders",
-  "automaker:lastProjectDir",
+  'automaker-storage',
+  'automaker-setup',
+  'worktree-panel-collapsed',
+  'file-browser-recent-folders',
+  'automaker:lastProjectDir',
 ] as const;
 
 /**
@@ -55,13 +55,13 @@ const LOCALSTORAGE_KEYS = [
  * as a cache. These other keys have been migrated and are no longer needed.
  */
 const KEYS_TO_CLEAR_AFTER_MIGRATION = [
-  "worktree-panel-collapsed",
-  "file-browser-recent-folders",
-  "automaker:lastProjectDir",
+  'worktree-panel-collapsed',
+  'file-browser-recent-folders',
+  'automaker:lastProjectDir',
   // Legacy keys from older versions
-  "automaker_projects",
-  "automaker_current_project",
-  "automaker_trashed_projects",
+  'automaker_projects',
+  'automaker_current_project',
+  'automaker_trashed_projects',
 ] as const;
 
 /**
@@ -104,35 +104,31 @@ export function useSettingsMigration(): MigrationState {
         const status = await api.settings.getStatus();
 
         if (!status.success) {
-          console.error("[Settings Migration] Failed to get status:", status);
+          console.error('[Settings Migration] Failed to get status:', status);
           setState({
             checked: true,
             migrated: false,
-            error: "Failed to check settings status",
+            error: 'Failed to check settings status',
           });
           return;
         }
 
         // If settings files already exist, no migration needed
         if (!status.needsMigration) {
-          console.log(
-            "[Settings Migration] Settings files exist, no migration needed"
-          );
+          console.log('[Settings Migration] Settings files exist, no migration needed');
           setState({ checked: true, migrated: false, error: null });
           return;
         }
 
         // Check if we have localStorage data to migrate
-        const automakerStorage = getItem("automaker-storage");
+        const automakerStorage = getItem('automaker-storage');
         if (!automakerStorage) {
-          console.log(
-            "[Settings Migration] No localStorage data to migrate"
-          );
+          console.log('[Settings Migration] No localStorage data to migrate');
           setState({ checked: true, migrated: false, error: null });
           return;
         }
 
-        console.log("[Settings Migration] Starting migration...");
+        console.log('[Settings Migration] Starting migration...');
 
         // Collect all localStorage data
         const localStorageData: Record<string, string> = {};
@@ -147,7 +143,7 @@ export function useSettingsMigration(): MigrationState {
         const result = await api.settings.migrate(localStorageData);
 
         if (result.success) {
-          console.log("[Settings Migration] Migration successful:", {
+          console.log('[Settings Migration] Migration successful:', {
             globalSettings: result.migratedGlobalSettings,
             credentials: result.migratedCredentials,
             projects: result.migratedProjectCount,
@@ -160,22 +156,19 @@ export function useSettingsMigration(): MigrationState {
 
           setState({ checked: true, migrated: true, error: null });
         } else {
-          console.warn(
-            "[Settings Migration] Migration had errors:",
-            result.errors
-          );
+          console.warn('[Settings Migration] Migration had errors:', result.errors);
           setState({
             checked: true,
             migrated: false,
-            error: result.errors.join(", "),
+            error: result.errors.join(', '),
           });
         }
       } catch (error) {
-        console.error("[Settings Migration] Migration failed:", error);
+        console.error('[Settings Migration] Migration failed:', error);
         setState({
           checked: true,
           migrated: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -204,7 +197,7 @@ export async function syncSettingsToServer(): Promise<boolean> {
 
   try {
     const api = getHttpApiClient();
-    const automakerStorage = getItem("automaker-storage");
+    const automakerStorage = getItem('automaker-storage');
 
     if (!automakerStorage) {
       return false;
@@ -241,7 +234,7 @@ export async function syncSettingsToServer(): Promise<boolean> {
     const result = await api.settings.updateGlobal(updates);
     return result.success;
   } catch (error) {
-    console.error("[Settings Sync] Failed to sync settings:", error);
+    console.error('[Settings Sync] Failed to sync settings:', error);
     return false;
   }
 }
@@ -272,7 +265,7 @@ export async function syncCredentialsToServer(apiKeys: {
     const result = await api.settings.updateCredentials({ apiKeys });
     return result.success;
   } catch (error) {
-    console.error("[Settings Sync] Failed to sync credentials:", error);
+    console.error('[Settings Sync] Failed to sync credentials:', error);
     return false;
   }
 }
@@ -316,10 +309,7 @@ export async function syncProjectSettingsToServer(
     const result = await api.settings.updateProject(projectPath, updates);
     return result.success;
   } catch (error) {
-    console.error(
-      "[Settings Sync] Failed to sync project settings:",
-      error
-    );
+    console.error('[Settings Sync] Failed to sync project settings:', error);
     return false;
   }
 }

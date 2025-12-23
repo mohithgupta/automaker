@@ -1,8 +1,7 @@
-
-import { useState } from "react";
-import { useAppStore } from "@/store/app-store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from 'react';
+import { useAppStore } from '@/store/app-store';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Plus,
   MessageSquare,
@@ -12,16 +11,16 @@ import {
   Search,
   ChevronLeft,
   ArchiveRestore,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 
 export function ChatHistory() {
   const {
@@ -37,7 +36,7 @@ export function ChatHistory() {
     setChatHistoryOpen,
   } = useAppStore();
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [showArchived, setShowArchived] = useState(false);
 
   if (!currentProject) {
@@ -45,18 +44,12 @@ export function ChatHistory() {
   }
 
   // Filter sessions for current project
-  const projectSessions = chatSessions.filter(
-    (session) => session.projectId === currentProject.id
-  );
+  const projectSessions = chatSessions.filter((session) => session.projectId === currentProject.id);
 
   // Filter by search query and archived status
   const filteredSessions = projectSessions.filter((session) => {
-    const matchesSearch = session.title
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesArchivedStatus = showArchived
-      ? session.archived
-      : !session.archived;
+    const matchesSearch = session.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesArchivedStatus = showArchived ? session.archived : !session.archived;
     return matchesSearch && matchesArchivedStatus;
   });
 
@@ -85,7 +78,7 @@ export function ChatHistory() {
 
   const handleDeleteSession = (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("Are you sure you want to delete this chat session?")) {
+    if (confirm('Are you sure you want to delete this chat session?')) {
       deleteChatSession(sessionId);
     }
   };
@@ -93,8 +86,8 @@ export function ChatHistory() {
   return (
     <div
       className={cn(
-        "flex flex-col h-full bg-zinc-950/50 backdrop-blur-md border-r border-white/10 transition-all duration-200",
-        chatHistoryOpen ? "w-80" : "w-0 overflow-hidden"
+        'flex flex-col h-full bg-zinc-950/50 backdrop-blur-md border-r border-white/10 transition-all duration-200',
+        chatHistoryOpen ? 'w-80' : 'w-0 overflow-hidden'
       )}
     >
       {chatHistoryOpen && (
@@ -105,11 +98,7 @@ export function ChatHistory() {
               <MessageSquare className="w-5 h-5" />
               <h2 className="font-semibold">Chat History</h2>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setChatHistoryOpen(false)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setChatHistoryOpen(false)}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
           </div>
@@ -152,7 +141,7 @@ export function ChatHistory() {
               ) : (
                 <Archive className="w-4 h-4" />
               )}
-              {showArchived ? "Show Active" : "Show Archived"}
+              {showArchived ? 'Show Active' : 'Show Archived'}
               {showArchived && (
                 <Badge variant="outline" className="ml-auto">
                   {projectSessions.filter((s) => s.archived).length}
@@ -179,15 +168,13 @@ export function ChatHistory() {
                   <div
                     key={session.id}
                     className={cn(
-                      "flex items-center gap-2 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors group",
-                      currentChatSession?.id === session.id && "bg-accent"
+                      'flex items-center gap-2 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors group',
+                      currentChatSession?.id === session.id && 'bg-accent'
                     )}
                     onClick={() => handleSelectSession(session)}
                   >
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-sm truncate">
-                        {session.title}
-                      </h3>
+                      <h3 className="font-medium text-sm truncate">{session.title}</h3>
                       <p className="text-xs text-muted-foreground truncate">
                         {session.messages.length} messages
                       </p>
@@ -199,30 +186,20 @@ export function ChatHistory() {
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                          >
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                             <MoreVertical className="w-3 h-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {session.archived ? (
                             <DropdownMenuItem
-                              onClick={(e) =>
-                                handleUnarchiveSession(session.id, e)
-                              }
+                              onClick={(e) => handleUnarchiveSession(session.id, e)}
                             >
                               <ArchiveRestore className="w-4 h-4 mr-2" />
                               Unarchive
                             </DropdownMenuItem>
                           ) : (
-                            <DropdownMenuItem
-                              onClick={(e) =>
-                                handleArchiveSession(session.id, e)
-                              }
-                            >
+                            <DropdownMenuItem onClick={(e) => handleArchiveSession(session.id, e)}>
                               <Archive className="w-4 h-4 mr-2" />
                               Archive
                             </DropdownMenuItem>

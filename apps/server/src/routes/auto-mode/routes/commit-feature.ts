@@ -2,9 +2,9 @@
  * POST /commit-feature endpoint - Commit feature changes
  */
 
-import type { Request, Response } from "express";
-import type { AutoModeService } from "../../../services/auto-mode-service.js";
-import { getErrorMessage, logError } from "../common.js";
+import type { Request, Response } from 'express';
+import type { AutoModeService } from '../../../services/auto-mode-service.js';
+import { getErrorMessage, logError } from '../common.js';
 
 export function createCommitFeatureHandler(autoModeService: AutoModeService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -16,23 +16,17 @@ export function createCommitFeatureHandler(autoModeService: AutoModeService) {
       };
 
       if (!projectPath || !featureId) {
-        res
-          .status(400)
-          .json({
-            success: false,
-            error: "projectPath and featureId are required",
-          });
+        res.status(400).json({
+          success: false,
+          error: 'projectPath and featureId are required',
+        });
         return;
       }
 
-      const commitHash = await autoModeService.commitFeature(
-        projectPath,
-        featureId,
-        worktreePath
-      );
+      const commitHash = await autoModeService.commitFeature(projectPath, featureId, worktreePath);
       res.json({ success: true, commitHash });
     } catch (error) {
-      logError(error, "Commit feature failed");
+      logError(error, 'Commit feature failed');
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -11,7 +11,11 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["automaker", "prompts", "ai"],
+  "keywords": [
+    "automaker",
+    "prompts",
+    "ai"
+  ],
   "author": "AutoMaker Team",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {

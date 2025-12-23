@@ -15,6 +15,7 @@ npm install @automaker/types
 ## Exports
 
 ### Provider Types
+
 Types for AI provider integration and Claude SDK.
 
 ```typescript
@@ -26,23 +27,20 @@ import type {
   ProviderMessage,
   InstallationStatus,
   ValidationResult,
-  ModelDefinition
+  ModelDefinition,
 } from '@automaker/types';
 ```
 
 ### Feature Types
+
 Feature management and workflow types.
 
 ```typescript
-import type {
-  Feature,
-  FeatureStatus,
-  PlanningMode,
-  PlanSpec
-} from '@automaker/types';
+import type { Feature, FeatureStatus, PlanningMode, PlanSpec } from '@automaker/types';
 ```
 
 **Feature Interface:**
+
 - `id` - Unique feature identifier
 - `category` - Feature category/type
 - `description` - Feature description
@@ -52,6 +50,7 @@ import type {
 - `planSpec` - Plan specification and approval status
 
 ### Session Types
+
 Agent session management.
 
 ```typescript
@@ -59,39 +58,32 @@ import type {
   AgentSession,
   SessionListItem,
   CreateSessionParams,
-  UpdateSessionParams
+  UpdateSessionParams,
 } from '@automaker/types';
 ```
 
 ### Error Types
+
 Error classification and handling.
 
 ```typescript
-import type {
-  ErrorType,
-  ErrorInfo
-} from '@automaker/types';
+import type { ErrorType, ErrorInfo } from '@automaker/types';
 ```
 
 ### Image Types
+
 Image handling for prompts.
 
 ```typescript
-import type {
-  ImageData,
-  ImageContentBlock
-} from '@automaker/types';
+import type { ImageData, ImageContentBlock } from '@automaker/types';
 ```
 
 ### Model Types
+
 Claude model definitions and mappings.
 
 ```typescript
-import {
-  CLAUDE_MODEL_MAP,
-  DEFAULT_MODELS,
-  type ModelAlias
-} from '@automaker/types';
+import { CLAUDE_MODEL_MAP, DEFAULT_MODELS, type ModelAlias } from '@automaker/types';
 ```
 
 ## Usage Example
@@ -105,12 +97,12 @@ const feature: Feature = {
   description: 'Implement user authentication',
   dependencies: ['database-setup'],
   status: 'pending',
-  planningMode: 'spec'
+  planningMode: 'spec',
 };
 
 const options: ExecuteOptions = {
   model: 'claude-sonnet-4-20250514',
-  temperature: 0.7
+  temperature: 0.7,
 };
 ```
 
@@ -140,6 +132,7 @@ To maintain the package dependency hierarchy and prevent circular dependencies:
 4. **Document the rule** - When adding new functionality, ensure it follows this constraint
 
 This constraint ensures a clean one-way dependency flow:
+
 ```
 @automaker/types (foundation - no dependencies)
     ↓

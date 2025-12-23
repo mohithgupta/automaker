@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,30 +6,30 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { HotkeyButton } from "@/components/ui/hotkey-button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { CategoryAutocomplete } from "@/components/ui/category-autocomplete";
+} from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { HotkeyButton } from '@/components/ui/hotkey-button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { CategoryAutocomplete } from '@/components/ui/category-autocomplete';
 import {
   DescriptionImageDropZone,
   FeatureImagePath as DescriptionImagePath,
+  FeatureTextFilePath as DescriptionTextFilePath,
   ImagePreviewMap,
-} from "@/components/ui/description-image-dropzone";
+} from '@/components/ui/description-image-dropzone';
 import {
   MessageSquare,
   Settings2,
   SlidersHorizontal,
-  FlaskConical,
   Sparkles,
   ChevronDown,
   GitBranch,
-} from "lucide-react";
-import { toast } from "sonner";
-import { getElectronAPI } from "@/lib/electron";
-import { modelSupportsThinking } from "@/lib/utils";
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { getElectronAPI } from '@/lib/electron';
+import { modelSupportsThinking } from '@/lib/utils';
 import {
   Feature,
   AgentModel,
@@ -38,7 +37,7 @@ import {
   AIProfile,
   useAppStore,
   PlanningMode,
-} from "@/store/app-store";
+} from '@/store/app-store';
 import {
   ModelSelector,
   ThinkingLevelSelector,
@@ -47,14 +46,14 @@ import {
   PrioritySelector,
   BranchSelector,
   PlanningModeSelector,
-} from "../shared";
+} from '../shared';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { DependencyTreeDialog } from "./dependency-tree-dialog";
+} from '@/components/ui/dropdown-menu';
+import { DependencyTreeDialog } from './dependency-tree-dialog';
 
 interface EditFeatureDialogProps {
   feature: Feature | null;
@@ -65,11 +64,11 @@ interface EditFeatureDialogProps {
       title: string;
       category: string;
       description: string;
-      steps: string[];
       skipTests: boolean;
       model: AgentModel;
       thinkingLevel: ThinkingLevel;
       imagePaths: DescriptionImagePath[];
+      textFilePaths: DescriptionTextFilePath[];
       branchName: string; // Can be empty string to use current branch
       priority: number;
       planningMode: PlanningMode;
@@ -104,16 +103,19 @@ export function EditFeatureDialog({
     // If feature has no branchName, default to using current branch
     return !feature?.branchName;
   });
-  const [editFeaturePreviewMap, setEditFeaturePreviewMap] =
-    useState<ImagePreviewMap>(() => new Map());
+  const [editFeaturePreviewMap, setEditFeaturePreviewMap] = useState<ImagePreviewMap>(
+    () => new Map()
+  );
   const [showEditAdvancedOptions, setShowEditAdvancedOptions] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancementMode, setEnhancementMode] = useState<
-    "improve" | "technical" | "simplify" | "acceptance"
-  >("improve");
+    'improve' | 'technical' | 'simplify' | 'acceptance'
+  >('improve');
   const [showDependencyTree, setShowDependencyTree] = useState(false);
   const [planningMode, setPlanningMode] = useState<PlanningMode>(feature?.planningMode ?? 'skip');
-  const [requirePlanApproval, setRequirePlanApproval] = useState(feature?.requirePlanApproval ?? false);
+  const [requirePlanApproval, setRequirePlanApproval] = useState(
+    feature?.requirePlanApproval ?? false
+  );
 
   // Get enhancement model and worktrees setting from store
   const { enhancementModel, useWorktrees } = useAppStore();
@@ -135,40 +137,38 @@ export function EditFeatureDialog({
     if (!editingFeature) return;
 
     // Validate branch selection when "other branch" is selected and branch selector is enabled
-    const isBranchSelectorEnabled = editingFeature.status === "backlog";
+    const isBranchSelectorEnabled = editingFeature.status === 'backlog';
     if (
       useWorktrees &&
       isBranchSelectorEnabled &&
       !useCurrentBranch &&
       !editingFeature.branchName?.trim()
     ) {
-      toast.error("Please select a branch name");
+      toast.error('Please select a branch name');
       return;
     }
 
-    const selectedModel = (editingFeature.model ?? "opus") as AgentModel;
-    const normalizedThinking: ThinkingLevel = modelSupportsThinking(
-      selectedModel
-    )
-      ? editingFeature.thinkingLevel ?? "none"
-      : "none";
+    const selectedModel = (editingFeature.model ?? 'opus') as AgentModel;
+    const normalizedThinking: ThinkingLevel = modelSupportsThinking(selectedModel)
+      ? (editingFeature.thinkingLevel ?? 'none')
+      : 'none';
 
     // Use current branch if toggle is on
     // If currentBranch is provided (non-primary worktree), use it
     // Otherwise (primary worktree), use empty string which means "unassigned" (show only on primary)
     const finalBranchName = useCurrentBranch
-      ? (currentBranch || "")
-      : editingFeature.branchName || "";
+      ? currentBranch || ''
+      : editingFeature.branchName || '';
 
     const updates = {
-      title: editingFeature.title ?? "",
+      title: editingFeature.title ?? '',
       category: editingFeature.category,
       description: editingFeature.description,
-      steps: editingFeature.steps,
       skipTests: editingFeature.skipTests ?? false,
       model: selectedModel,
       thinkingLevel: normalizedThinking,
       imagePaths: editingFeature.imagePaths ?? [],
+      textFilePaths: editingFeature.textFilePaths ?? [],
       branchName: finalBranchName,
       priority: editingFeature.priority ?? 2,
       planningMode,
@@ -192,16 +192,11 @@ export function EditFeatureDialog({
     setEditingFeature({
       ...editingFeature,
       model,
-      thinkingLevel: modelSupportsThinking(model)
-        ? editingFeature.thinkingLevel
-        : "none",
+      thinkingLevel: modelSupportsThinking(model) ? editingFeature.thinkingLevel : 'none',
     });
   };
 
-  const handleProfileSelect = (
-    model: AgentModel,
-    thinkingLevel: ThinkingLevel
-  ) => {
+  const handleProfileSelect = (model: AgentModel, thinkingLevel: ThinkingLevel) => {
     if (!editingFeature) return;
     setEditingFeature({
       ...editingFeature,
@@ -224,16 +219,14 @@ export function EditFeatureDialog({
 
       if (result?.success && result.enhancedText) {
         const enhancedText = result.enhancedText;
-        setEditingFeature((prev) =>
-          prev ? { ...prev, description: enhancedText } : prev
-        );
-        toast.success("Description enhanced!");
+        setEditingFeature((prev) => (prev ? { ...prev, description: enhancedText } : prev));
+        toast.success('Description enhanced!');
       } else {
-        toast.error(result?.error || "Failed to enhance description");
+        toast.error(result?.error || 'Failed to enhance description');
       }
     } catch (error) {
-      console.error("Enhancement failed:", error);
-      toast.error("Failed to enhance description");
+      console.error('Enhancement failed:', error);
+      toast.error('Failed to enhance description');
     } finally {
       setIsEnhancing(false);
     }
@@ -267,10 +260,7 @@ export function EditFeatureDialog({
           <DialogTitle>Edit Feature</DialogTitle>
           <DialogDescription>Modify the feature details.</DialogDescription>
         </DialogHeader>
-        <Tabs
-          defaultValue="prompt"
-          className="py-4 flex-1 min-h-0 flex flex-col"
-        >
+        <Tabs defaultValue="prompt" className="py-4 flex-1 min-h-0 flex flex-col">
           <TabsList className="w-full grid grid-cols-3 mb-4">
             <TabsTrigger value="prompt" data-testid="edit-tab-prompt">
               <MessageSquare className="w-4 h-4 mr-2" />
@@ -287,10 +277,7 @@ export function EditFeatureDialog({
           </TabsList>
 
           {/* Prompt Tab */}
-          <TabsContent
-            value="prompt"
-            className="space-y-4 overflow-y-auto cursor-default"
-          >
+          <TabsContent value="prompt" className="space-y-4 overflow-y-auto cursor-default">
             <div className="space-y-2">
               <Label htmlFor="edit-description">Description</Label>
               <DescriptionImageDropZone
@@ -308,6 +295,13 @@ export function EditFeatureDialog({
                     imagePaths: images,
                   })
                 }
+                textFiles={editingFeature.textFilePaths ?? []}
+                onTextFilesChange={(textFiles) =>
+                  setEditingFeature({
+                    ...editingFeature,
+                    textFilePaths: textFiles,
+                  })
+                }
                 placeholder="Describe the feature..."
                 previewMap={editFeaturePreviewMap}
                 onPreviewMapChange={setEditFeaturePreviewMap}
@@ -318,7 +312,7 @@ export function EditFeatureDialog({
               <Label htmlFor="edit-title">Title (optional)</Label>
               <Input
                 id="edit-title"
-                value={editingFeature.title ?? ""}
+                value={editingFeature.title ?? ''}
                 onChange={(e) =>
                   setEditingFeature({
                     ...editingFeature,
@@ -332,38 +326,25 @@ export function EditFeatureDialog({
             <div className="flex w-fit items-center gap-3 select-none cursor-default">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-[180px] justify-between"
-                  >
-                    {enhancementMode === "improve" && "Improve Clarity"}
-                    {enhancementMode === "technical" && "Add Technical Details"}
-                    {enhancementMode === "simplify" && "Simplify"}
-                    {enhancementMode === "acceptance" &&
-                      "Add Acceptance Criteria"}
+                  <Button variant="outline" size="sm" className="w-[180px] justify-between">
+                    {enhancementMode === 'improve' && 'Improve Clarity'}
+                    {enhancementMode === 'technical' && 'Add Technical Details'}
+                    {enhancementMode === 'simplify' && 'Simplify'}
+                    {enhancementMode === 'acceptance' && 'Add Acceptance Criteria'}
                     <ChevronDown className="w-4 h-4 ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem
-                    onClick={() => setEnhancementMode("improve")}
-                  >
+                  <DropdownMenuItem onClick={() => setEnhancementMode('improve')}>
                     Improve Clarity
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setEnhancementMode("technical")}
-                  >
+                  <DropdownMenuItem onClick={() => setEnhancementMode('technical')}>
                     Add Technical Details
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setEnhancementMode("simplify")}
-                  >
+                  <DropdownMenuItem onClick={() => setEnhancementMode('simplify')}>
                     Simplify
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setEnhancementMode("acceptance")}
-                  >
+                  <DropdownMenuItem onClick={() => setEnhancementMode('acceptance')}>
                     Add Acceptance Criteria
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -400,7 +381,7 @@ export function EditFeatureDialog({
               <BranchSelector
                 useCurrentBranch={useCurrentBranch}
                 onUseCurrentBranchChange={setUseCurrentBranch}
-                branchName={editingFeature.branchName ?? ""}
+                branchName={editingFeature.branchName ?? ''}
                 onBranchNameChange={(value) =>
                   setEditingFeature({
                     ...editingFeature,
@@ -410,7 +391,7 @@ export function EditFeatureDialog({
                 branchSuggestions={branchSuggestions}
                 branchCardCounts={branchCardCounts}
                 currentBranch={currentBranch}
-                disabled={editingFeature.status !== "backlog"}
+                disabled={editingFeature.status !== 'backlog'}
                 testIdPrefix="edit-feature"
               />
             )}
@@ -429,17 +410,12 @@ export function EditFeatureDialog({
           </TabsContent>
 
           {/* Model Tab */}
-          <TabsContent
-            value="model"
-            className="space-y-4 overflow-y-auto cursor-default"
-          >
+          <TabsContent value="model" className="space-y-4 overflow-y-auto cursor-default">
             {/* Show Advanced Options Toggle */}
             {showProfilesOnly && (
               <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">
-                    Simple Mode Active
-                  </p>
+                  <p className="text-sm font-medium text-foreground">Simple Mode Active</p>
                   <p className="text-xs text-muted-foreground">
                     Only showing AI profiles. Advanced model tweaking is hidden.
                   </p>
@@ -447,13 +423,11 @@ export function EditFeatureDialog({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    setShowEditAdvancedOptions(!showEditAdvancedOptions)
-                  }
+                  onClick={() => setShowEditAdvancedOptions(!showEditAdvancedOptions)}
                   data-testid="edit-show-advanced-options-toggle"
                 >
                   <Settings2 className="w-4 h-4 mr-2" />
-                  {showEditAdvancedOptions ? "Hide" : "Show"} Advanced
+                  {showEditAdvancedOptions ? 'Hide' : 'Show'} Advanced
                 </Button>
               </div>
             )}
@@ -461,29 +435,28 @@ export function EditFeatureDialog({
             {/* Quick Select Profile Section */}
             <ProfileQuickSelect
               profiles={aiProfiles}
-              selectedModel={editingFeature.model ?? "opus"}
-              selectedThinkingLevel={editingFeature.thinkingLevel ?? "none"}
+              selectedModel={editingFeature.model ?? 'opus'}
+              selectedThinkingLevel={editingFeature.thinkingLevel ?? 'none'}
               onSelect={handleProfileSelect}
               testIdPrefix="edit-profile-quick-select"
             />
 
             {/* Separator */}
-            {aiProfiles.length > 0 &&
-              (!showProfilesOnly || showEditAdvancedOptions) && (
-                <div className="border-t border-border" />
-              )}
+            {aiProfiles.length > 0 && (!showProfilesOnly || showEditAdvancedOptions) && (
+              <div className="border-t border-border" />
+            )}
 
             {/* Claude Models Section */}
             {(!showProfilesOnly || showEditAdvancedOptions) && (
               <>
                 <ModelSelector
-                  selectedModel={(editingFeature.model ?? "opus") as AgentModel}
+                  selectedModel={(editingFeature.model ?? 'opus') as AgentModel}
                   onModelSelect={handleModelSelect}
                   testIdPrefix="edit-model-select"
                 />
                 {editModelAllowsThinking && (
                   <ThinkingLevelSelector
-                    selectedLevel={editingFeature.thinkingLevel ?? "none"}
+                    selectedLevel={editingFeature.thinkingLevel ?? 'none'}
                     onLevelSelect={(level) =>
                       setEditingFeature({
                         ...editingFeature,
@@ -515,13 +488,7 @@ export function EditFeatureDialog({
             {/* Testing Section */}
             <TestingTabContent
               skipTests={editingFeature.skipTests ?? false}
-              onSkipTestsChange={(skipTests) =>
-                setEditingFeature({ ...editingFeature, skipTests })
-              }
-              steps={editingFeature.steps}
-              onStepsChange={(steps) =>
-                setEditingFeature({ ...editingFeature, steps })
-              }
+              onSkipTestsChange={(skipTests) => setEditingFeature({ ...editingFeature, skipTests })}
               testIdPrefix="edit"
             />
           </TabsContent>
@@ -541,12 +508,12 @@ export function EditFeatureDialog({
             </Button>
             <HotkeyButton
               onClick={handleUpdate}
-              hotkey={{ key: "Enter", cmdCtrl: true }}
+              hotkey={{ key: 'Enter', cmdCtrl: true }}
               hotkeyActive={!!editingFeature}
               data-testid="confirm-edit-feature"
               disabled={
                 useWorktrees &&
-                editingFeature.status === "backlog" &&
+                editingFeature.status === 'backlog' &&
                 !useCurrentBranch &&
                 !editingFeature.branchName?.trim()
               }

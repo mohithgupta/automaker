@@ -2,9 +2,9 @@
  * POST /context-exists endpoint - Check if context exists for a feature
  */
 
-import type { Request, Response } from "express";
-import type { AutoModeService } from "../../../services/auto-mode-service.js";
-import { getErrorMessage, logError } from "../common.js";
+import type { Request, Response } from 'express';
+import type { AutoModeService } from '../../../services/auto-mode-service.js';
+import { getErrorMessage, logError } from '../common.js';
 
 export function createContextExistsHandler(autoModeService: AutoModeService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -15,22 +15,17 @@ export function createContextExistsHandler(autoModeService: AutoModeService) {
       };
 
       if (!projectPath || !featureId) {
-        res
-          .status(400)
-          .json({
-            success: false,
-            error: "projectPath and featureId are required",
-          });
+        res.status(400).json({
+          success: false,
+          error: 'projectPath and featureId are required',
+        });
         return;
       }
 
-      const exists = await autoModeService.contextExists(
-        projectPath,
-        featureId
-      );
+      const exists = await autoModeService.contextExists(projectPath, featureId);
       res.json({ success: true, exists });
     } catch (error) {
-      logError(error, "Check context exists failed");
+      logError(error, 'Check context exists failed');
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -1,17 +1,12 @@
-import { Feature } from "@/store/app-store";
-import { GitBranch, GitPullRequest, ExternalLink, CheckCircle2, Circle } from "lucide-react";
+import { Feature } from '@/store/app-store';
+import { GitBranch, GitPullRequest, ExternalLink } from 'lucide-react';
 
 interface CardContentSectionsProps {
   feature: Feature;
   useWorktrees: boolean;
-  showSteps: boolean;
 }
 
-export function CardContentSections({
-  feature,
-  useWorktrees,
-  showSteps,
-}: CardContentSectionsProps) {
+export function CardContentSections({ feature, useWorktrees }: CardContentSectionsProps) {
   return (
     <>
       {/* Target Branch Display */}
@@ -25,10 +20,10 @@ export function CardContentSections({
       )}
 
       {/* PR URL Display */}
-      {typeof feature.prUrl === "string" &&
+      {typeof feature.prUrl === 'string' &&
         /^https?:\/\//i.test(feature.prUrl) &&
         (() => {
-          const prNumber = feature.prUrl.split("/").pop();
+          const prNumber = feature.prUrl.split('/').pop();
           return (
             <div className="mb-2">
               <a
@@ -43,40 +38,13 @@ export function CardContentSections({
               >
                 <GitPullRequest className="w-3 h-3 shrink-0" />
                 <span className="truncate max-w-[150px]">
-                  {prNumber ? `Pull Request #${prNumber}` : "Pull Request"}
+                  {prNumber ? `Pull Request #${prNumber}` : 'Pull Request'}
                 </span>
                 <ExternalLink className="w-2.5 h-2.5 shrink-0" />
               </a>
             </div>
           );
         })()}
-
-      {/* Steps Preview */}
-      {showSteps && feature.steps && feature.steps.length > 0 && (
-        <div className="mb-3 space-y-1.5">
-          {feature.steps.slice(0, 3).map((step, index) => (
-            <div
-              key={index}
-              className="flex items-start gap-2 text-[11px] text-muted-foreground/80"
-            >
-              {feature.status === "verified" ? (
-                <CheckCircle2 className="w-3 h-3 mt-0.5 text-[var(--status-success)] shrink-0" />
-              ) : (
-                <Circle className="w-3 h-3 mt-0.5 shrink-0 text-muted-foreground/50" />
-              )}
-              <span className="break-words hyphens-auto line-clamp-2 leading-relaxed">
-                {step}
-              </span>
-            </div>
-          ))}
-          {feature.steps.length > 3 && (
-            <p className="text-[10px] text-muted-foreground/60 pl-5">
-              +{feature.steps.length - 3} more
-            </p>
-          )}
-        </div>
-      )}
     </>
   );
 }
-

@@ -2,8 +2,8 @@
  * Subprocess management utilities for CLI providers
  */
 
-import { spawn, type ChildProcess } from "child_process";
-import readline from "readline";
+import { spawn, type ChildProcess } from 'child_process';
+import readline from 'readline';
 
 export interface SubprocessOptions {
   command: string;
@@ -23,9 +23,7 @@ export interface SubprocessResult {
 /**
  * Spawns a subprocess and streams JSONL output line-by-line
  */
-export async function* spawnJSONLProcess(
-  options: SubprocessOptions
-): AsyncGenerator<unknown> {
+export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGenerator<unknown> {
   const { command, args, cwd, env, abortController, timeout = 30000 } = options;
 
   const processEnv = {
@@ -33,22 +31,22 @@ export async function* spawnJSONLProcess(
     ...env,
   };
 
-  console.log(`[SubprocessManager] Spawning: ${command} ${args.slice(0, -1).join(" ")}`);
+  console.log(`[SubprocessManager] Spawning: ${command} ${args.slice(0, -1).join(' ')}`);
   console.log(`[SubprocessManager] Working directory: ${cwd}`);
 
   const childProcess: ChildProcess = spawn(command, args, {
     cwd,
     env: processEnv,
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
 
-  let stderrOutput = "";
+  let stderrOutput = '';
   let lastOutputTime = Date.now();
   let timeoutHandle: NodeJS.Timeout | null = null;
 
   // Collect stderr for error reporting
   if (childProcess.stderr) {
-    childProcess.stderr.on("data", (data: Buffer) => {
+    childProcess.stderr.on('data', (data: Buffer) => {
       const text = data.toString();
       stderrOutput += text;
       console.error(`[SubprocessManager] stderr: ${text}`);
@@ -64,10 +62,8 @@ export async function* spawnJSONLProcess(
     timeoutHandle = setTimeout(() => {
       const elapsed = Date.now() - lastOutputTime;
       if (elapsed >= timeout) {
-        console.error(
-          `[SubprocessManager] Process timeout: no output for ${timeout}ms`
-        );
-        childProcess.kill("SIGTERM");
+        console.error(`[SubprocessManager] Process timeout: no output for ${timeout}ms`);
+        childProcess.kill('SIGTERM');
       }
     }, timeout);
   };
@@ -76,12 +72,12 @@ export async function* spawnJSONLProcess(
 
   // Setup abort handling
   if (abortController) {
-    abortController.signal.addEventListener("abort", () => {
-      console.log("[SubprocessManager] Abort signal received, killing process");
+    abortController.signal.addEventListener('abort', () => {
+      console.log('[SubprocessManager] Abort signal received, killing process');
       if (timeoutHandle) {
         clearTimeout(timeoutHandle);
       }
-      childProcess.kill("SIGTERM");
+      childProcess.kill('SIGTERM');
     });
   }
 
@@ -102,19 +98,16 @@ export async function* spawnJSONLProcess(
           const parsed = JSON.parse(line);
           yield parsed;
         } catch (parseError) {
-          console.error(
-            `[SubprocessManager] Failed to parse JSONL line: ${line}`,
-            parseError
-          );
+          console.error(`[SubprocessManager] Failed to parse JSONL line: ${line}`, parseError);
           // Yield error but continue processing
           yield {
-            type: "error",
+            type: 'error',
             error: `Failed to parse output: ${line}`,
           };
         }
       }
     } catch (error) {
-      console.error("[SubprocessManager] Error reading stdout:", error);
+      console.error('[SubprocessManager] Error reading stdout:', error);
       throw error;
     } finally {
       if (timeoutHandle) {
@@ -125,13 +118,13 @@ export async function* spawnJSONLProcess(
 
   // Wait for process to exit
   const exitCode = await new Promise<number | null>((resolve) => {
-    childProcess.on("exit", (code) => {
+    childProcess.on('exit', (code) => {
       console.log(`[SubprocessManager] Process exited with code: ${code}`);
       resolve(code);
     });
 
-    childProcess.on("error", (error) => {
-      console.error("[SubprocessManager] Process error:", error);
+    childProcess.on('error', (error) => {
+      console.error('[SubprocessManager] Process error:', error);
       resolve(null);
     });
   });
@@ -141,23 +134,21 @@ export async function* spawnJSONLProcess(
     const errorMessage = stderrOutput || `Process exited with code ${exitCode}`;
     console.error(`[SubprocessManager] Process failed: ${errorMessage}`);
     yield {
-      type: "error",
+      type: 'error',
       error: errorMessage,
     };
   }
 
   // Process completed successfully
   if (exitCode === 0 && !stderrOutput) {
-    console.log("[SubprocessManager] Process completed successfully");
+    console.log('[SubprocessManager] Process completed successfully');
   }
 }
 
 /**
  * Spawns a subprocess and collects all output
  */
-export async function spawnProcess(
-  options: SubprocessOptions
-): Promise<SubprocessResult> {
+export async function spawnProcess(options: SubprocessOptions): Promise<SubprocessResult> {
   const { command, args, cwd, env, abortController } = options;
 
   const processEnv = {
@@ -169,37 +160,37 @@ export async function spawnProcess(
     const childProcess = spawn(command, args, {
       cwd,
       env: processEnv,
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
 
-    let stdout = "";
-    let stderr = "";
+    let stdout = '';
+    let stderr = '';
 
     if (childProcess.stdout) {
-      childProcess.stdout.on("data", (data: Buffer) => {
+      childProcess.stdout.on('data', (data: Buffer) => {
         stdout += data.toString();
       });
     }
 
     if (childProcess.stderr) {
-      childProcess.stderr.on("data", (data: Buffer) => {
+      childProcess.stderr.on('data', (data: Buffer) => {
         stderr += data.toString();
       });
     }
 
     // Setup abort handling
     if (abortController) {
-      abortController.signal.addEventListener("abort", () => {
-        childProcess.kill("SIGTERM");
-        reject(new Error("Process aborted"));
+      abortController.signal.addEventListener('abort', () => {
+        childProcess.kill('SIGTERM');
+        reject(new Error('Process aborted'));
       });
     }
 
-    childProcess.on("exit", (code) => {
+    childProcess.on('exit', (code) => {
       resolve({ stdout, stderr, exitCode: code });
     });
 
-    childProcess.on("error", (error) => {
+    childProcess.on('error', (error) => {
       reject(error);
     });
   });

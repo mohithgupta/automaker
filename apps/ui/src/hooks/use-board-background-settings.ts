@@ -1,7 +1,7 @@
-import { useCallback } from "react";
-import { useAppStore } from "@/store/app-store";
-import { getHttpApiClient } from "@/lib/http-api-client";
-import { toast } from "sonner";
+import { useCallback } from 'react';
+import { useAppStore } from '@/store/app-store';
+import { getHttpApiClient } from '@/lib/http-api-client';
+import { toast } from 'sonner';
 
 /**
  * Hook for managing board background settings with automatic persistence to server
@@ -14,20 +14,17 @@ export function useBoardBackgroundSettings() {
   const persistSettings = useCallback(
     async (projectPath: string, settingsToUpdate: Record<string, unknown>) => {
       try {
-        const result = await httpClient.settings.updateProject(
-          projectPath,
-          {
-            boardBackground: settingsToUpdate,
-          }
-        );
+        const result = await httpClient.settings.updateProject(projectPath, {
+          boardBackground: settingsToUpdate,
+        });
 
         if (!result.success) {
-          console.error("Failed to persist settings:", result.error);
-          toast.error("Failed to save settings");
+          console.error('Failed to persist settings:', result.error);
+          toast.error('Failed to save settings');
         }
       } catch (error) {
-        console.error("Failed to persist settings:", error);
-        toast.error("Failed to save settings");
+        console.error('Failed to persist settings:', error);
+        toast.error('Failed to save settings');
       }
     },
     [httpClient]
@@ -37,16 +34,18 @@ export function useBoardBackgroundSettings() {
   const getCurrentSettings = useCallback(
     (projectPath: string) => {
       const current = store.boardBackgroundByProject[projectPath];
-      return current || {
-        imagePath: null,
-        cardOpacity: 100,
-        columnOpacity: 100,
-        columnBorderEnabled: true,
-        cardGlassmorphism: true,
-        cardBorderEnabled: true,
-        cardBorderOpacity: 100,
-        hideScrollbar: false,
-      };
+      return (
+        current || {
+          imagePath: null,
+          cardOpacity: 100,
+          columnOpacity: 100,
+          columnBorderEnabled: true,
+          cardGlassmorphism: true,
+          cardBorderEnabled: true,
+          cardBorderOpacity: 100,
+          hideScrollbar: false,
+        }
+      );
     },
     [store.boardBackgroundByProject]
   );

@@ -4,8 +4,8 @@
  * try-catch block in every route handler
  */
 
-import type { Request, Response, NextFunction } from "express";
-import { validatePath, PathNotAllowedError } from "@automaker/platform";
+import type { Request, Response, NextFunction } from 'express';
+import { validatePath, PathNotAllowedError } from '@automaker/platform';
 
 /**
  * Creates a middleware that validates specified path parameters in req.body
@@ -24,7 +24,7 @@ export function validatePathParams(...paramNames: string[]) {
     try {
       for (const paramName of paramNames) {
         // Handle optional parameters (paramName?)
-        if (paramName.endsWith("?")) {
+        if (paramName.endsWith('?')) {
           const actualName = paramName.slice(0, -1);
           const value = req.body[actualName];
           if (value) {
@@ -34,7 +34,7 @@ export function validatePathParams(...paramNames: string[]) {
         }
 
         // Handle array parameters (paramName[])
-        if (paramName.endsWith("[]")) {
+        if (paramName.endsWith('[]')) {
           const actualName = paramName.slice(0, -2);
           const values = req.body[actualName];
           if (Array.isArray(values) && values.length > 0) {

@@ -1,16 +1,12 @@
-
-import { useCallback } from "react";
-import type { WorktreeInfo, FeatureInfo } from "../types";
+import { useCallback } from 'react';
+import type { WorktreeInfo, FeatureInfo } from '../types';
 
 interface UseRunningFeaturesOptions {
   runningFeatureIds: string[];
   features: FeatureInfo[];
 }
 
-export function useRunningFeatures({
-  runningFeatureIds,
-  features,
-}: UseRunningFeaturesOptions) {
+export function useRunningFeatures({ runningFeatureIds, features }: UseRunningFeaturesOptions) {
   const hasRunningFeatures = useCallback(
     (worktree: WorktreeInfo) => {
       if (runningFeatureIds.length === 0) return false;

@@ -9,48 +9,40 @@
  * - Verification and merge workflows
  */
 
-import { ProviderFactory } from "../providers/provider-factory.js";
-import type { ExecuteOptions, Feature } from "@automaker/types";
+import { ProviderFactory } from '../providers/provider-factory.js';
+import type { ExecuteOptions, Feature } from '@automaker/types';
 import {
   buildPromptWithImages,
   isAbortError,
   classifyError,
-} from "@automaker/utils";
-import { resolveModelString, DEFAULT_MODELS } from "@automaker/model-resolver";
-import {
-  resolveDependencies,
-  areDependenciesSatisfied,
-} from "@automaker/dependency-resolver";
-import {
-  getFeatureDir,
-  getAutomakerDir,
-  getFeaturesDir,
-  getContextDir,
-} from "@automaker/platform";
-import { exec } from "child_process";
-import { promisify } from "util";
-import path from "path";
-import * as secureFs from "../lib/secure-fs.js";
-import type { EventEmitter } from "../lib/events.js";
-import { createAutoModeOptions } from "../lib/sdk-options.js";
-import { FeatureLoader } from "./feature-loader.js";
-import { isPathAllowed, PathNotAllowedError } from "@automaker/platform";
+  loadContextFiles,
+} from '@automaker/utils';
+import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
+import { resolveDependencies, areDependenciesSatisfied } from '@automaker/dependency-resolver';
+import { getFeatureDir, getAutomakerDir, getFeaturesDir } from '@automaker/platform';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+import * as secureFs from '../lib/secure-fs.js';
+import type { EventEmitter } from '../lib/events.js';
+import { createAutoModeOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
+import { FeatureLoader } from './feature-loader.js';
 
 const execAsync = promisify(exec);
 
 // Planning mode types for spec-driven development
-type PlanningMode = "skip" | "lite" | "spec" | "full";
+type PlanningMode = 'skip' | 'lite' | 'spec' | 'full';
 
 interface ParsedTask {
   id: string; // e.g., "T001"
   description: string; // e.g., "Create user model"
   filePath?: string; // e.g., "src/models/user.ts"
   phase?: string; // e.g., "Phase 1: Foundation" (for full mode)
-  status: "pending" | "in_progress" | "completed" | "failed";
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
 }
 
 interface PlanSpec {
-  status: "pending" | "generating" | "generated" | "approved" | "rejected";
+  status: 'pending' | 'generating' | 'generated' | 'approved' | 'rejected';
   content?: string;
   version: number;
   generatedAt?: string;
@@ -246,7 +238,7 @@ function parseTasksFromSpec(specContent: string): ParsedTask[] {
   }
 
   const tasksContent = tasksBlockMatch[1];
-  const lines = tasksContent.split("\n");
+  const lines = tasksContent.split('\n');
 
   let currentPhase: string | undefined;
 
@@ -261,7 +253,7 @@ function parseTasksFromSpec(specContent: string): ParsedTask[] {
     }
 
     // Check for task line
-    if (trimmedLine.startsWith("- [ ]")) {
+    if (trimmedLine.startsWith('- [ ]')) {
       const parsed = parseTaskLine(trimmedLine, currentPhase);
       if (parsed) {
         tasks.push(parsed);
@@ -278,9 +270,7 @@ function parseTasksFromSpec(specContent: string): ParsedTask[] {
  */
 function parseTaskLine(line: string, currentPhase?: string): ParsedTask | null {
   // Match pattern: - [ ] T###: Description | File: path
-  const taskMatch = line.match(
-    /- \[ \] (T\d{3}):\s*([^|]+)(?:\|\s*File:\s*(.+))?$/
-  );
+  const taskMatch = line.match(/- \[ \] (T\d{3}):\s*([^|]+)(?:\|\s*File:\s*(.+))?$/);
   if (!taskMatch) {
     // Try simpler pattern without file
     const simpleMatch = line.match(/- \[ \] (T\d{3}):\s*(.+)$/);
@@ -289,7 +279,7 @@ function parseTaskLine(line: string, currentPhase?: string): ParsedTask | null {
         id: simpleMatch[1],
         description: simpleMatch[2].trim(),
         phase: currentPhase,
-        status: "pending",
+        status: 'pending',
       };
     }
     return null;
@@ -300,7 +290,7 @@ function parseTaskLine(line: string, currentPhase?: string): ParsedTask | null {
     description: taskMatch[2].trim(),
     filePath: taskMatch[3]?.trim(),
     phase: currentPhase,
-    status: "pending",
+    status: 'pending',
   };
 }
 
@@ -330,11 +320,7 @@ interface AutoLoopState {
 }
 
 interface PendingApproval {
-  resolve: (result: {
-    approved: boolean;
-    editedPlan?: string;
-    feedback?: string;
-  }) => void;
+  resolve: (result: { approved: boolean; editedPlan?: string; feedback?: string }) => void;
   reject: (error: Error) => void;
   featureId: string;
   projectPath: string;
@@ -365,7 +351,7 @@ export class AutoModeService {
    */
   async startAutoLoop(projectPath: string, maxConcurrency = 3): Promise<void> {
     if (this.autoLoopRunning) {
-      throw new Error("Auto mode is already running");
+      throw new Error('Auto mode is already running');
     }
 
     this.autoLoopRunning = true;
@@ -376,16 +362,16 @@ export class AutoModeService {
       projectPath,
     };
 
-    this.emitAutoModeEvent("auto_mode_started", {
+    this.emitAutoModeEvent('auto_mode_started', {
       message: `Auto mode started with max ${maxConcurrency} concurrent features`,
       projectPath,
     });
 
     // Run the loop in the background
     this.runAutoLoop().catch((error) => {
-      console.error("[AutoMode] Loop error:", error);
+      console.error('[AutoMode] Loop error:', error);
       const errorInfo = classifyError(error);
-      this.emitAutoModeEvent("auto_mode_error", {
+      this.emitAutoModeEvent('auto_mode_error', {
         error: errorInfo.message,
         errorType: errorInfo.type,
       });
@@ -406,13 +392,11 @@ export class AutoModeService {
         }
 
         // Load pending features
-        const pendingFeatures = await this.loadPendingFeatures(
-          this.config!.projectPath
-        );
+        const pendingFeatures = await this.loadPendingFeatures(this.config!.projectPath);
 
         if (pendingFeatures.length === 0) {
-          this.emitAutoModeEvent("auto_mode_idle", {
-            message: "No pending features - auto mode idle",
+          this.emitAutoModeEvent('auto_mode_idle', {
+            message: 'No pending features - auto mode idle',
             projectPath: this.config!.projectPath,
           });
           await this.sleep(10000);
@@ -420,9 +404,7 @@ export class AutoModeService {
         }
 
         // Find a feature not currently running
-        const nextFeature = pendingFeatures.find(
-          (f) => !this.runningFeatures.has(f.id)
-        );
+        const nextFeature = pendingFeatures.find((f) => !this.runningFeatures.has(f.id));
 
         if (nextFeature) {
           // Start feature execution in background
@@ -438,7 +420,7 @@ export class AutoModeService {
 
         await this.sleep(2000);
       } catch (error) {
-        console.error("[AutoMode] Loop iteration error:", error);
+        console.error('[AutoMode] Loop iteration error:', error);
         await this.sleep(5000);
       }
     }
@@ -459,8 +441,8 @@ export class AutoModeService {
 
     // Emit stop event immediately when user explicitly stops
     if (wasRunning) {
-      this.emitAutoModeEvent("auto_mode_stopped", {
-        message: "Auto mode stopped",
+      this.emitAutoModeEvent('auto_mode_stopped', {
+        message: 'Auto mode stopped',
         projectPath: this.config?.projectPath,
       });
     }
@@ -486,7 +468,7 @@ export class AutoModeService {
     }
   ): Promise<void> {
     if (this.runningFeatures.has(featureId)) {
-      throw new Error("already running");
+      throw new Error('already running');
     }
 
     // Add to running features immediately to prevent race conditions
@@ -503,18 +485,13 @@ export class AutoModeService {
     this.runningFeatures.set(featureId, tempRunningFeature);
 
     try {
-      // Validate that project path is allowed
-      if (!isPathAllowed(projectPath)) {
-        throw new PathNotAllowedError(projectPath);
-      }
+      // Validate that project path is allowed using centralized validation
+      validateWorkingDirectory(projectPath);
 
       // Check if feature has existing context - if so, resume instead of starting fresh
       // Skip this check if we're already being called with a continuation prompt (from resumeFeature)
       if (!options?.continuationPrompt) {
-        const hasExistingContext = await this.contextExists(
-          projectPath,
-          featureId
-        );
+        const hasExistingContext = await this.contextExists(projectPath, featureId);
         if (hasExistingContext) {
           console.log(
             `[AutoMode] Feature ${featureId} has existing context, resuming instead of starting fresh`
@@ -526,13 +503,13 @@ export class AutoModeService {
       }
 
       // Emit feature start event early
-      this.emitAutoModeEvent("auto_mode_feature_start", {
+      this.emitAutoModeEvent('auto_mode_feature_start', {
         featureId,
         projectPath,
         feature: {
           id: featureId,
-          title: "Loading...",
-          description: "Feature is starting",
+          title: 'Loading...',
+          description: 'Feature is starting',
         },
       });
       // Load feature details FIRST to get branchName
@@ -549,15 +526,10 @@ export class AutoModeService {
       if (useWorktrees && branchName) {
         // Try to find existing worktree for this branch
         // Worktree should already exist (created when feature was added/edited)
-        worktreePath = await this.findExistingWorktreeForBranch(
-          projectPath,
-          branchName
-        );
+        worktreePath = await this.findExistingWorktreeForBranch(projectPath, branchName);
 
         if (worktreePath) {
-          console.log(
-            `[AutoMode] Using worktree for branch "${branchName}": ${worktreePath}`
-          );
+          console.log(`[AutoMode] Using worktree for branch "${branchName}": ${worktreePath}`);
         } else {
           // Worktree doesn't exist - log warning and continue with project path
           console.warn(
@@ -567,34 +539,31 @@ export class AutoModeService {
       }
 
       // Ensure workDir is always an absolute path for cross-platform compatibility
-      const workDir = worktreePath
-        ? path.resolve(worktreePath)
-        : path.resolve(projectPath);
+      const workDir = worktreePath ? path.resolve(worktreePath) : path.resolve(projectPath);
 
-      // Validate that working directory is allowed
-      if (!isPathAllowed(workDir)) {
-        throw new PathNotAllowedError(workDir);
-      }
+      // Validate that working directory is allowed using centralized validation
+      validateWorkingDirectory(workDir);
 
       // Update running feature with actual worktree info
       tempRunningFeature.worktreePath = worktreePath;
       tempRunningFeature.branchName = branchName ?? null;
 
       // Update feature status to in_progress
-      await this.updateFeatureStatus(projectPath, featureId, "in_progress");
+      await this.updateFeatureStatus(projectPath, featureId, 'in_progress');
 
       // Build the prompt - use continuation prompt if provided (for recovery after plan approval)
       let prompt: string;
       // Load project context files (CLAUDE.md, CODE_QUALITY.md, etc.) - passed as system prompt
-      const contextFiles = await this.loadContextFiles(projectPath);
+      const { formattedPrompt: contextFilesPrompt } = await loadContextFiles({
+        projectPath,
+        fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+      });
 
       if (options?.continuationPrompt) {
         // Continuation prompt is used when recovering from a plan approval
         // The plan was already approved, so skip the planning phase
         prompt = options.continuationPrompt;
-        console.log(
-          `[AutoMode] Using continuation prompt for feature ${featureId}`
-        );
+        console.log(`[AutoMode] Using continuation prompt for feature ${featureId}`);
       } else {
         // Normal flow: build prompt with planning phase
         const featurePrompt = this.buildFeaturePrompt(feature);
@@ -602,8 +571,8 @@ export class AutoModeService {
         prompt = planningPrefix + featurePrompt;
 
         // Emit planning mode info
-        if (feature.planningMode && feature.planningMode !== "skip") {
-          this.emitAutoModeEvent("planning_started", {
+        if (feature.planningMode && feature.planningMode !== 'skip') {
+          this.emitAutoModeEvent('planning_started', {
             featureId: feature.id,
             mode: feature.planningMode,
             message: `Starting ${feature.planningMode} planning phase`,
@@ -613,14 +582,12 @@ export class AutoModeService {
 
       // Extract image paths from feature
       const imagePaths = feature.imagePaths?.map((img) =>
-        typeof img === "string" ? img : img.path
+        typeof img === 'string' ? img : img.path
       );
 
       // Get model from feature
       const model = resolveModelString(feature.model, DEFAULT_MODELS.claude);
-      console.log(
-        `[AutoMode] Executing feature ${featureId} with model: ${model} in ${workDir}`
-      );
+      console.log(`[AutoMode] Executing feature ${featureId} with model: ${model} in ${workDir}`);
 
       // Run the agent with the feature's model and images
       // Context files are passed as system prompt for higher priority
@@ -636,39 +603,38 @@ export class AutoModeService {
           projectPath,
           planningMode: feature.planningMode,
           requirePlanApproval: feature.requirePlanApproval,
-          systemPrompt: contextFiles || undefined,
+          systemPrompt: contextFilesPrompt || undefined,
         }
       );
 
-      // Mark as waiting_approval for user review
-      await this.updateFeatureStatus(
-        projectPath,
-        featureId,
-        "waiting_approval"
-      );
+      // Determine final status based on testing mode:
+      // - skipTests=false (automated testing): go directly to 'verified' (no manual verify needed)
+      // - skipTests=true (manual verification): go to 'waiting_approval' for manual review
+      const finalStatus = feature.skipTests ? 'waiting_approval' : 'verified';
+      await this.updateFeatureStatus(projectPath, featureId, finalStatus);
 
-      this.emitAutoModeEvent("auto_mode_feature_complete", {
+      this.emitAutoModeEvent('auto_mode_feature_complete', {
         featureId,
         passes: true,
         message: `Feature completed in ${Math.round(
           (Date.now() - tempRunningFeature.startTime) / 1000
-        )}s`,
+        )}s${finalStatus === 'verified' ? ' - auto-verified' : ''}`,
         projectPath,
       });
     } catch (error) {
       const errorInfo = classifyError(error);
 
       if (errorInfo.isAbort) {
-        this.emitAutoModeEvent("auto_mode_feature_complete", {
+        this.emitAutoModeEvent('auto_mode_feature_complete', {
           featureId,
           passes: false,
-          message: "Feature stopped by user",
+          message: 'Feature stopped by user',
           projectPath,
         });
       } else {
         console.error(`[AutoMode] Feature ${featureId} failed:`, error);
-        await this.updateFeatureStatus(projectPath, featureId, "backlog");
-        this.emitAutoModeEvent("auto_mode_error", {
+        await this.updateFeatureStatus(projectPath, featureId, 'backlog');
+        this.emitAutoModeEvent('auto_mode_error', {
           featureId,
           error: errorInfo.message,
           errorType: errorInfo.type,
@@ -676,11 +642,9 @@ export class AutoModeService {
         });
       }
     } finally {
+      console.log(`[AutoMode] Feature ${featureId} execution ended, cleaning up runningFeatures`);
       console.log(
-        `[AutoMode] Feature ${featureId} execution ended, cleaning up runningFeatures`
-      );
-      console.log(
-        `[AutoMode] Pending approvals at cleanup: ${Array.from(this.pendingApprovals.keys()).join(", ") || "none"}`
+        `[AutoMode] Pending approvals at cleanup: ${Array.from(this.pendingApprovals.keys()).join(', ') || 'none'}`
       );
       this.runningFeatures.delete(featureId);
     }
@@ -705,18 +669,14 @@ export class AutoModeService {
   /**
    * Resume a feature (continues from saved context)
    */
-  async resumeFeature(
-    projectPath: string,
-    featureId: string,
-    useWorktrees = false
-  ): Promise<void> {
+  async resumeFeature(projectPath: string, featureId: string, useWorktrees = false): Promise<void> {
     if (this.runningFeatures.has(featureId)) {
-      throw new Error("already running");
+      throw new Error('already running');
     }
 
     // Check if context exists in .automaker directory
     const featureDir = getFeatureDir(projectPath, featureId);
-    const contextPath = path.join(featureDir, "agent-output.md");
+    const contextPath = path.join(featureDir, 'agent-output.md');
 
     let hasContext = false;
     try {
@@ -728,13 +688,8 @@ export class AutoModeService {
 
     if (hasContext) {
       // Load previous context and continue
-      const context = (await secureFs.readFile(contextPath, "utf-8")) as string;
-      return this.executeFeatureWithContext(
-        projectPath,
-        featureId,
-        context,
-        useWorktrees
-      );
+      const context = (await secureFs.readFile(contextPath, 'utf-8')) as string;
+      return this.executeFeatureWithContext(projectPath, featureId, context, useWorktrees);
     }
 
     // No context, start fresh - executeFeature will handle adding to runningFeatures
@@ -753,6 +708,9 @@ export class AutoModeService {
     imagePaths?: string[],
     useWorktrees = true
   ): Promise<void> {
+    // Validate project path early for fast failure
+    validateWorkingDirectory(projectPath);
+
     if (this.runningFeatures.has(featureId)) {
       throw new Error(`Feature ${featureId} is already running`);
     }
@@ -770,34 +728,29 @@ export class AutoModeService {
 
     if (useWorktrees && branchName) {
       // Try to find existing worktree for this branch
-      worktreePath = await this.findExistingWorktreeForBranch(
-        projectPath,
-        branchName
-      );
+      worktreePath = await this.findExistingWorktreeForBranch(projectPath, branchName);
 
       if (worktreePath) {
         workDir = worktreePath;
-        console.log(
-          `[AutoMode] Follow-up using worktree for branch "${branchName}": ${workDir}`
-        );
+        console.log(`[AutoMode] Follow-up using worktree for branch "${branchName}": ${workDir}`);
       }
     }
 
     // Load previous agent output if it exists
     const featureDir = getFeatureDir(projectPath, featureId);
-    const contextPath = path.join(featureDir, "agent-output.md");
-    let previousContext = "";
+    const contextPath = path.join(featureDir, 'agent-output.md');
+    let previousContext = '';
     try {
-      previousContext = (await secureFs.readFile(
-        contextPath,
-        "utf-8"
-      )) as string;
+      previousContext = (await secureFs.readFile(contextPath, 'utf-8')) as string;
     } catch {
       // No previous context
     }
 
     // Load project context files (CLAUDE.md, CODE_QUALITY.md, etc.) - passed as system prompt
-    const contextFiles = await this.loadContextFiles(projectPath);
+    const { formattedPrompt: contextFilesPrompt } = await loadContextFiles({
+      projectPath,
+      fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+    });
 
     // Build complete prompt with feature info, previous context, and follow-up instructions
     let fullPrompt = `## Follow-up on Feature Implementation
@@ -831,12 +784,12 @@ Address the follow-up instructions above. Review the previous work and make the 
       startTime: Date.now(),
     });
 
-    this.emitAutoModeEvent("auto_mode_feature_start", {
+    this.emitAutoModeEvent('auto_mode_feature_start', {
       featureId,
       projectPath,
       feature: feature || {
         id: featureId,
-        title: "Follow-up",
+        title: 'Follow-up',
         description: prompt.substring(0, 100),
       },
     });
@@ -844,18 +797,16 @@ Address the follow-up instructions above. Review the previous work and make the 
     try {
       // Get model from feature (already loaded above)
       const model = resolveModelString(feature?.model, DEFAULT_MODELS.claude);
-      console.log(
-        `[AutoMode] Follow-up for feature ${featureId} using model: ${model}`
-      );
+      console.log(`[AutoMode] Follow-up for feature ${featureId} using model: ${model}`);
 
       // Update feature status to in_progress
-      await this.updateFeatureStatus(projectPath, featureId, "in_progress");
+      await this.updateFeatureStatus(projectPath, featureId, 'in_progress');
 
       // Copy follow-up images to feature folder
       const copiedImagePaths: string[] = [];
       if (imagePaths && imagePaths.length > 0) {
         const featureDirForImages = getFeatureDir(projectPath, featureId);
-        const featureImagesDir = path.join(featureDirForImages, "images");
+        const featureImagesDir = path.join(featureDirForImages, 'images');
 
         await secureFs.mkdir(featureImagesDir, { recursive: true });
 
@@ -871,10 +822,7 @@ Address the follow-up instructions above. Review the previous work and make the 
             // Store the absolute path (external storage uses absolute paths)
             copiedImagePaths.push(destPath);
           } catch (error) {
-            console.error(
-              `[AutoMode] Failed to copy follow-up image ${imagePath}:`,
-              error
-            );
+            console.error(`[AutoMode] Failed to copy follow-up image ${imagePath}:`, error);
           }
         }
       }
@@ -885,7 +833,7 @@ Address the follow-up instructions above. Review the previous work and make the 
         const newImagePaths = copiedImagePaths.map((p) => ({
           path: p,
           filename: path.basename(p),
-          mimeType: "image/png", // Default, could be improved
+          mimeType: 'image/png', // Default, could be improved
         }));
 
         feature.imagePaths = [...currentImagePaths, ...newImagePaths];
@@ -897,7 +845,7 @@ Address the follow-up instructions above. Review the previous work and make the 
       // Add all images from feature (now includes both original and new)
       if (feature?.imagePaths) {
         const allPaths = feature.imagePaths.map((img) =>
-          typeof img === "string" ? img : img.path
+          typeof img === 'string' ? img : img.path
         );
         allImagePaths.push(...allPaths);
       }
@@ -905,13 +853,10 @@ Address the follow-up instructions above. Review the previous work and make the 
       // Save updated feature.json with new images
       if (copiedImagePaths.length > 0 && feature) {
         const featureDirForSave = getFeatureDir(projectPath, featureId);
-        const featurePath = path.join(featureDirForSave, "feature.json");
+        const featurePath = path.join(featureDirForSave, 'feature.json');
 
         try {
-          await secureFs.writeFile(
-            featurePath,
-            JSON.stringify(feature, null, 2)
-          );
+          await secureFs.writeFile(featurePath, JSON.stringify(feature, null, 2));
         } catch (error) {
           console.error(`[AutoMode] Failed to save feature.json:`, error);
         }
@@ -931,29 +876,28 @@ Address the follow-up instructions above. Review the previous work and make the 
         model,
         {
           projectPath,
-          planningMode: "skip", // Follow-ups don't require approval
+          planningMode: 'skip', // Follow-ups don't require approval
           previousContent: previousContext || undefined,
-          systemPrompt: contextFiles || undefined,
+          systemPrompt: contextFilesPrompt || undefined,
         }
       );
 
-      // Mark as waiting_approval for user review
-      await this.updateFeatureStatus(
-        projectPath,
-        featureId,
-        "waiting_approval"
-      );
+      // Determine final status based on testing mode:
+      // - skipTests=false (automated testing): go directly to 'verified' (no manual verify needed)
+      // - skipTests=true (manual verification): go to 'waiting_approval' for manual review
+      const finalStatus = feature?.skipTests ? 'waiting_approval' : 'verified';
+      await this.updateFeatureStatus(projectPath, featureId, finalStatus);
 
-      this.emitAutoModeEvent("auto_mode_feature_complete", {
+      this.emitAutoModeEvent('auto_mode_feature_complete', {
         featureId,
         passes: true,
-        message: "Follow-up completed successfully",
+        message: `Follow-up completed successfully${finalStatus === 'verified' ? ' - auto-verified' : ''}`,
         projectPath,
       });
     } catch (error) {
       const errorInfo = classifyError(error);
       if (!errorInfo.isCancellation) {
-        this.emitAutoModeEvent("auto_mode_error", {
+        this.emitAutoModeEvent('auto_mode_error', {
           featureId,
           error: errorInfo.message,
           errorType: errorInfo.type,
@@ -968,12 +912,9 @@ Address the follow-up instructions above. Review the previous work and make the 
   /**
    * Verify a feature's implementation
    */
-  async verifyFeature(
-    projectPath: string,
-    featureId: string
-  ): Promise<boolean> {
+  async verifyFeature(projectPath: string, featureId: string): Promise<boolean> {
     // Worktrees are in project dir
-    const worktreePath = path.join(projectPath, ".worktrees", featureId);
+    const worktreePath = path.join(projectPath, '.worktrees', featureId);
     let workDir = projectPath;
 
     try {
@@ -985,15 +926,14 @@ Address the follow-up instructions above. Review the previous work and make the 
 
     // Run verification - check if tests pass, build works, etc.
     const verificationChecks = [
-      { cmd: "npm run lint", name: "Lint" },
-      { cmd: "npm run typecheck", name: "Type check" },
-      { cmd: "npm test", name: "Tests" },
-      { cmd: "npm run build", name: "Build" },
+      { cmd: 'npm run lint', name: 'Lint' },
+      { cmd: 'npm run typecheck', name: 'Type check' },
+      { cmd: 'npm test', name: 'Tests' },
+      { cmd: 'npm run build', name: 'Build' },
     ];
 
     let allPassed = true;
-    const results: Array<{ check: string; passed: boolean; output?: string }> =
-      [];
+    const results: Array<{ check: string; passed: boolean; output?: string }> = [];
 
     for (const check of verificationChecks) {
       try {
@@ -1017,14 +957,12 @@ Address the follow-up instructions above. Review the previous work and make the 
       }
     }
 
-    this.emitAutoModeEvent("auto_mode_feature_complete", {
+    this.emitAutoModeEvent('auto_mode_feature_complete', {
       featureId,
       passes: allPassed,
       message: allPassed
-        ? "All verification checks passed"
-        : `Verification failed: ${
-            results.find((r) => !r.passed)?.check || "Unknown"
-          }`,
+        ? 'All verification checks passed'
+        : `Verification failed: ${results.find((r) => !r.passed)?.check || 'Unknown'}`,
     });
 
     return allPassed;
@@ -1056,25 +994,19 @@ Address the follow-up instructions above. Review the previous work and make the 
       }
     } else {
       // Fallback: try to find worktree at legacy location
-      const legacyWorktreePath = path.join(
-        projectPath,
-        ".worktrees",
-        featureId
-      );
+      const legacyWorktreePath = path.join(projectPath, '.worktrees', featureId);
       try {
         await secureFs.access(legacyWorktreePath);
         workDir = legacyWorktreePath;
         console.log(`[AutoMode] Committing in legacy worktree: ${workDir}`);
       } catch {
-        console.log(
-          `[AutoMode] No worktree found, committing in project path: ${workDir}`
-        );
+        console.log(`[AutoMode] No worktree found, committing in project path: ${workDir}`);
       }
     }
 
     try {
       // Check for changes
-      const { stdout: status } = await execAsync("git status --porcelain", {
+      const { stdout: status } = await execAsync('git status --porcelain', {
         cwd: workDir,
       });
       if (!status.trim()) {
@@ -1090,17 +1022,17 @@ Address the follow-up instructions above. Review the previous work and make the 
         : `feat: Feature ${featureId}`;
 
       // Stage and commit
-      await execAsync("git add -A", { cwd: workDir });
+      await execAsync('git add -A', { cwd: workDir });
       await execAsync(`git commit -m "${commitMessage.replace(/"/g, '\\"')}"`, {
         cwd: workDir,
       });
 
       // Get commit hash
-      const { stdout: hash } = await execAsync("git rev-parse HEAD", {
+      const { stdout: hash } = await execAsync('git rev-parse HEAD', {
         cwd: workDir,
       });
 
-      this.emitAutoModeEvent("auto_mode_feature_complete", {
+      this.emitAutoModeEvent('auto_mode_feature_complete', {
         featureId,
         passes: true,
         message: `Changes committed: ${hash.trim().substring(0, 8)}`,
@@ -1116,13 +1048,10 @@ Address the follow-up instructions above. Review the previous work and make the 
   /**
    * Check if context exists for a feature
    */
-  async contextExists(
-    projectPath: string,
-    featureId: string
-  ): Promise<boolean> {
+  async contextExists(projectPath: string, featureId: string): Promise<boolean> {
     // Context is stored in .automaker directory
     const featureDir = getFeatureDir(projectPath, featureId);
-    const contextPath = path.join(featureDir, "agent-output.md");
+    const contextPath = path.join(featureDir, 'agent-output.md');
 
     try {
       await secureFs.access(contextPath);
@@ -1133,78 +1062,24 @@ Address the follow-up instructions above. Review the previous work and make the 
   }
 
   /**
-   * Load context files from .automaker/context/ directory
-   * These are user-defined context files (CLAUDE.md, CODE_QUALITY.md, etc.)
-   * that provide project-specific rules and guidelines for the agent.
-   */
-  private async loadContextFiles(projectPath: string): Promise<string> {
-    // Use path.resolve for cross-platform absolute path handling
-    const contextDir = path.resolve(getContextDir(projectPath));
-
-    try {
-      // Check if directory exists first
-      await secureFs.access(contextDir);
-
-      const files = await secureFs.readdir(contextDir);
-      // Filter for text-based context files (case-insensitive for Windows)
-      const textFiles = files.filter((f) => {
-        const lower = f.toLowerCase();
-        return lower.endsWith(".md") || lower.endsWith(".txt");
-      });
-
-      if (textFiles.length === 0) return "";
-
-      const contents: string[] = [];
-      for (const file of textFiles) {
-        // Use path.join for cross-platform path construction
-        const filePath = path.join(contextDir, file);
-        const content = (await secureFs.readFile(filePath, "utf-8")) as string;
-        contents.push(`## ${file}\n\n${content}`);
-      }
-
-      console.log(
-        `[AutoMode] Loaded ${textFiles.length} context file(s): ${textFiles.join(", ")}`
-      );
-
-      return `# ⚠️ CRITICAL: Project Context Files - READ AND FOLLOW STRICTLY
-
-**IMPORTANT**: The following context files contain MANDATORY project-specific rules and conventions. You MUST:
-1. Read these rules carefully before taking any action
-2. Follow ALL commands exactly as shown (e.g., if the project uses \`pnpm\`, NEVER use \`npm\` or \`npx\`)
-3. Follow ALL coding conventions, commit message formats, and architectural patterns specified
-4. Reference these rules before running ANY shell commands or making commits
-
-Failure to follow these rules will result in broken builds, failed CI, and rejected commits.
-
-${contents.join("\n\n---\n\n")}
-
----
-
-**REMINDER**: Before running any command, verify you are using the correct package manager and following the conventions above.
-
----
-
-`;
-    } catch {
-      // Context directory doesn't exist or is empty - this is fine
-      return "";
-    }
-  }
-
-  /**
    * Analyze project to gather context
    */
   async analyzeProject(projectPath: string): Promise<void> {
+    // Validate project path before proceeding
+    // This is called here because analyzeProject builds ExecuteOptions directly
+    // without using a factory function from sdk-options.ts
+    validateWorkingDirectory(projectPath);
+
     const abortController = new AbortController();
 
     const analysisFeatureId = `analysis-${Date.now()}`;
-    this.emitAutoModeEvent("auto_mode_feature_start", {
+    this.emitAutoModeEvent('auto_mode_feature_start', {
       featureId: analysisFeatureId,
       projectPath,
       feature: {
         id: analysisFeatureId,
-        title: "Project Analysis",
-        description: "Analyzing project structure",
+        title: 'Project Analysis',
+        description: 'Analyzing project structure',
       },
     });
 
@@ -1219,10 +1094,7 @@ Format your response as a structured markdown document.`;
 
     try {
       // Use default Claude model for analysis (can be overridden in the future)
-      const analysisModel = resolveModelString(
-        undefined,
-        DEFAULT_MODELS.claude
-      );
+      const analysisModel = resolveModelString(undefined, DEFAULT_MODELS.claude);
       const provider = ProviderFactory.getProviderForModel(analysisModel);
 
       const options: ExecuteOptions = {
@@ -1230,45 +1102,45 @@ Format your response as a structured markdown document.`;
         model: analysisModel,
         maxTurns: 5,
         cwd: projectPath,
-        allowedTools: ["Read", "Glob", "Grep"],
+        allowedTools: ['Read', 'Glob', 'Grep'],
         abortController,
       };
 
       const stream = provider.executeQuery(options);
-      let analysisResult = "";
+      let analysisResult = '';
 
       for await (const msg of stream) {
-        if (msg.type === "assistant" && msg.message?.content) {
+        if (msg.type === 'assistant' && msg.message?.content) {
           for (const block of msg.message.content) {
-            if (block.type === "text") {
-              analysisResult = block.text || "";
-              this.emitAutoModeEvent("auto_mode_progress", {
+            if (block.type === 'text') {
+              analysisResult = block.text || '';
+              this.emitAutoModeEvent('auto_mode_progress', {
                 featureId: analysisFeatureId,
                 content: block.text,
                 projectPath,
               });
             }
           }
-        } else if (msg.type === "result" && msg.subtype === "success") {
+        } else if (msg.type === 'result' && msg.subtype === 'success') {
           analysisResult = msg.result || analysisResult;
         }
       }
 
       // Save analysis to .automaker directory
       const automakerDir = getAutomakerDir(projectPath);
-      const analysisPath = path.join(automakerDir, "project-analysis.md");
+      const analysisPath = path.join(automakerDir, 'project-analysis.md');
       await secureFs.mkdir(automakerDir, { recursive: true });
       await secureFs.writeFile(analysisPath, analysisResult);
 
-      this.emitAutoModeEvent("auto_mode_feature_complete", {
+      this.emitAutoModeEvent('auto_mode_feature_complete', {
         featureId: analysisFeatureId,
         passes: true,
-        message: "Project analysis completed",
+        message: 'Project analysis completed',
         projectPath,
       });
     } catch (error) {
       const errorInfo = classifyError(error);
-      this.emitAutoModeEvent("auto_mode_error", {
+      this.emitAutoModeEvent('auto_mode_error', {
         featureId: analysisFeatureId,
         error: errorInfo.message,
         errorType: errorInfo.type,
@@ -1317,11 +1189,9 @@ Format your response as a structured markdown document.`;
     featureId: string,
     projectPath: string
   ): Promise<{ approved: boolean; editedPlan?: string; feedback?: string }> {
+    console.log(`[AutoMode] Registering pending approval for feature ${featureId}`);
     console.log(
-      `[AutoMode] Registering pending approval for feature ${featureId}`
-    );
-    console.log(
-      `[AutoMode] Current pending approvals: ${Array.from(this.pendingApprovals.keys()).join(", ") || "none"}`
+      `[AutoMode] Current pending approvals: ${Array.from(this.pendingApprovals.keys()).join(', ') || 'none'}`
     );
     return new Promise((resolve, reject) => {
       this.pendingApprovals.set(featureId, {
@@ -1330,9 +1200,7 @@ Format your response as a structured markdown document.`;
         featureId,
         projectPath,
       });
-      console.log(
-        `[AutoMode] Pending approval registered for feature ${featureId}`
-      );
+      console.log(`[AutoMode] Pending approval registered for feature ${featureId}`);
     });
   }
 
@@ -1351,27 +1219,20 @@ Format your response as a structured markdown document.`;
       `[AutoMode] resolvePlanApproval called for feature ${featureId}, approved=${approved}`
     );
     console.log(
-      `[AutoMode] Current pending approvals: ${Array.from(this.pendingApprovals.keys()).join(", ") || "none"}`
+      `[AutoMode] Current pending approvals: ${Array.from(this.pendingApprovals.keys()).join(', ') || 'none'}`
     );
     const pending = this.pendingApprovals.get(featureId);
 
     if (!pending) {
-      console.log(
-        `[AutoMode] No pending approval in Map for feature ${featureId}`
-      );
+      console.log(`[AutoMode] No pending approval in Map for feature ${featureId}`);
 
       // RECOVERY: If no pending approval but we have projectPath from client,
       // check if feature's planSpec.status is 'generated' and handle recovery
       if (projectPathFromClient) {
-        console.log(
-          `[AutoMode] Attempting recovery with projectPath: ${projectPathFromClient}`
-        );
-        const feature = await this.loadFeature(
-          projectPathFromClient,
-          featureId
-        );
+        console.log(`[AutoMode] Attempting recovery with projectPath: ${projectPathFromClient}`);
+        const feature = await this.loadFeature(projectPathFromClient, featureId);
 
-        if (feature?.planSpec?.status === "generated") {
+        if (feature?.planSpec?.status === 'generated') {
           console.log(
             `[AutoMode] Feature ${featureId} has planSpec.status='generated', performing recovery`
           );
@@ -1379,36 +1240,27 @@ Format your response as a structured markdown document.`;
           if (approved) {
             // Update planSpec to approved
             await this.updateFeaturePlanSpec(projectPathFromClient, featureId, {
-              status: "approved",
+              status: 'approved',
               approvedAt: new Date().toISOString(),
               reviewedByUser: true,
               content: editedPlan || feature.planSpec.content,
             });
 
             // Build continuation prompt and re-run the feature
-            const planContent = editedPlan || feature.planSpec.content || "";
+            const planContent = editedPlan || feature.planSpec.content || '';
             let continuationPrompt = `The plan/specification has been approved. `;
             if (feedback) {
               continuationPrompt += `\n\nUser feedback: ${feedback}\n\n`;
             }
             continuationPrompt += `Now proceed with the implementation as specified in the plan:\n\n${planContent}\n\nImplement the feature now.`;
 
-            console.log(
-              `[AutoMode] Starting recovery execution for feature ${featureId}`
-            );
+            console.log(`[AutoMode] Starting recovery execution for feature ${featureId}`);
 
             // Start feature execution with the continuation prompt (async, don't await)
             // Pass undefined for providedWorktreePath, use options for continuation prompt
-            this.executeFeature(
-              projectPathFromClient,
-              featureId,
-              true,
-              false,
-              undefined,
-              {
-                continuationPrompt,
-              }
-            ).catch((error) => {
+            this.executeFeature(projectPathFromClient, featureId, true, false, undefined, {
+              continuationPrompt,
+            }).catch((error) => {
               console.error(
                 `[AutoMode] Recovery execution failed for feature ${featureId}:`,
                 error
@@ -1419,17 +1271,13 @@ Format your response as a structured markdown document.`;
           } else {
             // Rejected - update status and emit event
             await this.updateFeaturePlanSpec(projectPathFromClient, featureId, {
-              status: "rejected",
+              status: 'rejected',
               reviewedByUser: true,
             });
 
-            await this.updateFeatureStatus(
-              projectPathFromClient,
-              featureId,
-              "backlog"
-            );
+            await this.updateFeatureStatus(projectPathFromClient, featureId, 'backlog');
 
-            this.emitAutoModeEvent("plan_rejected", {
+            this.emitAutoModeEvent('plan_rejected', {
               featureId,
               projectPath: projectPathFromClient,
               feedback,
@@ -1448,15 +1296,13 @@ Format your response as a structured markdown document.`;
         error: `No pending approval for feature ${featureId}`,
       };
     }
-    console.log(
-      `[AutoMode] Found pending approval for feature ${featureId}, proceeding...`
-    );
+    console.log(`[AutoMode] Found pending approval for feature ${featureId}, proceeding...`);
 
     const { projectPath } = pending;
 
     // Update feature's planSpec status
     await this.updateFeaturePlanSpec(projectPath, featureId, {
-      status: approved ? "approved" : "rejected",
+      status: approved ? 'approved' : 'rejected',
       approvedAt: approved ? new Date().toISOString() : undefined,
       reviewedByUser: true,
       content: editedPlan, // Update content if user provided an edited version
@@ -1465,7 +1311,7 @@ Format your response as a structured markdown document.`;
     // If rejected with feedback, we can store it for the user to see
     if (!approved && feedback) {
       // Emit event so client knows the rejection reason
-      this.emitAutoModeEvent("plan_rejected", {
+      this.emitAutoModeEvent('plan_rejected', {
         featureId,
         projectPath,
         feedback,
@@ -1483,25 +1329,17 @@ Format your response as a structured markdown document.`;
    * Cancel a pending plan approval (e.g., when feature is stopped).
    */
   cancelPlanApproval(featureId: string): void {
+    console.log(`[AutoMode] cancelPlanApproval called for feature ${featureId}`);
     console.log(
-      `[AutoMode] cancelPlanApproval called for feature ${featureId}`
-    );
-    console.log(
-      `[AutoMode] Current pending approvals: ${Array.from(this.pendingApprovals.keys()).join(", ") || "none"}`
+      `[AutoMode] Current pending approvals: ${Array.from(this.pendingApprovals.keys()).join(', ') || 'none'}`
     );
     const pending = this.pendingApprovals.get(featureId);
     if (pending) {
-      console.log(
-        `[AutoMode] Found and cancelling pending approval for feature ${featureId}`
-      );
-      pending.reject(
-        new Error("Plan approval cancelled - feature was stopped")
-      );
+      console.log(`[AutoMode] Found and cancelling pending approval for feature ${featureId}`);
+      pending.reject(new Error('Plan approval cancelled - feature was stopped'));
       this.pendingApprovals.delete(featureId);
     } else {
-      console.log(
-        `[AutoMode] No pending approval to cancel for feature ${featureId}`
-      );
+      console.log(`[AutoMode] No pending approval to cancel for feature ${featureId}`);
     }
   }
 
@@ -1522,20 +1360,20 @@ Format your response as a structured markdown document.`;
     branchName: string
   ): Promise<string | null> {
     try {
-      const { stdout } = await execAsync("git worktree list --porcelain", {
+      const { stdout } = await execAsync('git worktree list --porcelain', {
         cwd: projectPath,
       });
 
-      const lines = stdout.split("\n");
+      const lines = stdout.split('\n');
       let currentPath: string | null = null;
       let currentBranch: string | null = null;
 
       for (const line of lines) {
-        if (line.startsWith("worktree ")) {
+        if (line.startsWith('worktree ')) {
           currentPath = line.slice(9);
-        } else if (line.startsWith("branch ")) {
-          currentBranch = line.slice(7).replace("refs/heads/", "");
-        } else if (line === "" && currentPath && currentBranch) {
+        } else if (line.startsWith('branch ')) {
+          currentBranch = line.slice(7).replace('refs/heads/', '');
+        } else if (line === '' && currentPath && currentBranch) {
           // End of a worktree entry
           if (currentBranch === branchName) {
             // Resolve to absolute path - git may return relative paths
@@ -1566,16 +1404,13 @@ Format your response as a structured markdown document.`;
     }
   }
 
-  private async loadFeature(
-    projectPath: string,
-    featureId: string
-  ): Promise<Feature | null> {
+  private async loadFeature(projectPath: string, featureId: string): Promise<Feature | null> {
     // Features are stored in .automaker directory
     const featureDir = getFeatureDir(projectPath, featureId);
-    const featurePath = path.join(featureDir, "feature.json");
+    const featurePath = path.join(featureDir, 'feature.json');
 
     try {
-      const data = (await secureFs.readFile(featurePath, "utf-8")) as string;
+      const data = (await secureFs.readFile(featurePath, 'utf-8')) as string;
       return JSON.parse(data);
     } catch {
       return null;
@@ -1589,16 +1424,16 @@ Format your response as a structured markdown document.`;
   ): Promise<void> {
     // Features are stored in .automaker directory
     const featureDir = getFeatureDir(projectPath, featureId);
-    const featurePath = path.join(featureDir, "feature.json");
+    const featurePath = path.join(featureDir, 'feature.json');
 
     try {
-      const data = (await secureFs.readFile(featurePath, "utf-8")) as string;
+      const data = (await secureFs.readFile(featurePath, 'utf-8')) as string;
       const feature = JSON.parse(data);
       feature.status = status;
       feature.updatedAt = new Date().toISOString();
       // Set justFinishedAt timestamp when moving to waiting_approval (agent just completed)
       // Badge will show for 2 minutes after this timestamp
-      if (status === "waiting_approval") {
+      if (status === 'waiting_approval') {
         feature.justFinishedAt = new Date().toISOString();
       } else {
         // Clear the timestamp when moving to other statuses
@@ -1618,22 +1453,16 @@ Format your response as a structured markdown document.`;
     featureId: string,
     updates: Partial<PlanSpec>
   ): Promise<void> {
-    const featurePath = path.join(
-      projectPath,
-      ".automaker",
-      "features",
-      featureId,
-      "feature.json"
-    );
+    const featurePath = path.join(projectPath, '.automaker', 'features', featureId, 'feature.json');
 
     try {
-      const data = (await secureFs.readFile(featurePath, "utf-8")) as string;
+      const data = (await secureFs.readFile(featurePath, 'utf-8')) as string;
       const feature = JSON.parse(data);
 
       // Initialize planSpec if it doesn't exist
       if (!feature.planSpec) {
         feature.planSpec = {
-          status: "pending",
+          status: 'pending',
           version: 1,
           reviewedByUser: false,
         };
@@ -1650,10 +1479,7 @@ Format your response as a structured markdown document.`;
       feature.updatedAt = new Date().toISOString();
       await secureFs.writeFile(featurePath, JSON.stringify(feature, null, 2));
     } catch (error) {
-      console.error(
-        `[AutoMode] Failed to update planSpec for ${featureId}:`,
-        error
-      );
+      console.error(`[AutoMode] Failed to update planSpec for ${featureId}:`, error);
     }
   }
 
@@ -1671,24 +1497,17 @@ Format your response as a structured markdown document.`;
       // Load all features (for dependency checking)
       for (const entry of entries) {
         if (entry.isDirectory()) {
-          const featurePath = path.join(
-            featuresDir,
-            entry.name,
-            "feature.json"
-          );
+          const featurePath = path.join(featuresDir, entry.name, 'feature.json');
           try {
-            const data = (await secureFs.readFile(
-              featurePath,
-              "utf-8"
-            )) as string;
+            const data = (await secureFs.readFile(featurePath, 'utf-8')) as string;
             const feature = JSON.parse(data);
             allFeatures.push(feature);
 
             // Track pending features separately
             if (
-              feature.status === "pending" ||
-              feature.status === "ready" ||
-              feature.status === "backlog"
+              feature.status === 'pending' ||
+              feature.status === 'ready' ||
+              feature.status === 'backlog'
             ) {
               pendingFeatures.push(feature);
             }
@@ -1717,42 +1536,41 @@ Format your response as a structured markdown document.`;
    */
   private extractTitleFromDescription(description: string): string {
     if (!description || !description.trim()) {
-      return "Untitled Feature";
+      return 'Untitled Feature';
     }
 
     // Get first line, or first 60 characters if no newline
-    const firstLine = description.split("\n")[0].trim();
+    const firstLine = description.split('\n')[0].trim();
     if (firstLine.length <= 60) {
       return firstLine;
     }
 
     // Truncate to 60 characters and add ellipsis
-    return firstLine.substring(0, 57) + "...";
+    return firstLine.substring(0, 57) + '...';
   }
 
   /**
    * Get the planning prompt prefix based on feature's planning mode
    */
   private getPlanningPromptPrefix(feature: Feature): string {
-    const mode = feature.planningMode || "skip";
+    const mode = feature.planningMode || 'skip';
 
-    if (mode === "skip") {
-      return ""; // No planning phase
+    if (mode === 'skip') {
+      return ''; // No planning phase
     }
 
     // For lite mode, use the approval variant if requirePlanApproval is true
     let promptKey: string = mode;
-    if (mode === "lite" && feature.requirePlanApproval === true) {
-      promptKey = "lite_with_approval";
+    if (mode === 'lite' && feature.requirePlanApproval === true) {
+      promptKey = 'lite_with_approval';
     }
 
-    const planningPrompt =
-      PLANNING_PROMPTS[promptKey as keyof typeof PLANNING_PROMPTS];
+    const planningPrompt = PLANNING_PROMPTS[promptKey as keyof typeof PLANNING_PROMPTS];
     if (!planningPrompt) {
-      return "";
+      return '';
     }
 
-    return planningPrompt + "\n\n---\n\n## Feature Request\n\n";
+    return planningPrompt + '\n\n---\n\n## Feature Request\n\n';
   }
 
   private buildFeaturePrompt(feature: Feature): string {
@@ -1776,18 +1594,13 @@ ${feature.spec}
     if (feature.imagePaths && feature.imagePaths.length > 0) {
       const imagesList = feature.imagePaths
         .map((img, idx) => {
-          const path = typeof img === "string" ? img : img.path;
+          const path = typeof img === 'string' ? img : img.path;
           const filename =
-            typeof img === "string"
-              ? path.split("/").pop()
-              : img.filename || path.split("/").pop();
-          const mimeType =
-            typeof img === "string" ? "image/*" : img.mimeType || "image/*";
-          return `   ${
-            idx + 1
-          }. ${filename} (${mimeType})\n      Path: ${path}`;
+            typeof img === 'string' ? path.split('/').pop() : img.filename || path.split('/').pop();
+          const mimeType = typeof img === 'string' ? 'image/*' : img.mimeType || 'image/*';
+          return `   ${idx + 1}. ${filename} (${mimeType})\n      Path: ${path}`;
         })
-        .join("\n");
+        .join('\n');
 
       prompt += `
 **📎 Context Images Attached:**
@@ -1799,15 +1612,17 @@ You can use the Read tool to view these images at any time during implementation
 `;
     }
 
-    prompt += `
+    // Add verification instructions based on testing mode
+    if (feature.skipTests) {
+      // Manual verification - just implement the feature
+      prompt += `
 ## Instructions
 
 Implement this feature by:
 1. First, explore the codebase to understand the existing structure
 2. Plan your implementation approach
 3. Write the necessary code changes
-4. Add or update tests as needed
-5. Ensure the code follows existing patterns and conventions
+4. Ensure the code follows existing patterns and conventions
 
 When done, wrap your final summary in <summary> tags like this:
 
@@ -1825,6 +1640,56 @@ When done, wrap your final summary in <summary> tags like this:
 </summary>
 
 This helps parse your summary correctly in the output logs.`;
+    } else {
+      // Automated testing - implement and verify with Playwright
+      prompt += `
+## Instructions
+
+Implement this feature by:
+1. First, explore the codebase to understand the existing structure
+2. Plan your implementation approach
+3. Write the necessary code changes
+4. Ensure the code follows existing patterns and conventions
+
+## Verification with Playwright (REQUIRED)
+
+After implementing the feature, you MUST verify it works correctly using Playwright:
+
+1. **Create a temporary Playwright test** to verify the feature works as expected
+2. **Run the test** to confirm the feature is working
+3. **Delete the test file** after verification - this is a temporary verification test, not a permanent test suite addition
+
+Example verification workflow:
+\`\`\`bash
+# Create a simple verification test
+npx playwright test my-verification-test.spec.ts
+
+# After successful verification, delete the test
+rm my-verification-test.spec.ts
+\`\`\`
+
+The test should verify the core functionality of the feature. If the test fails, fix the implementation and re-test.
+
+When done, wrap your final summary in <summary> tags like this:
+
+<summary>
+## Summary: [Feature Title]
+
+### Changes Implemented
+- [List of changes made]
+
+### Files Modified
+- [List of files]
+
+### Verification Status
+- [Describe how the feature was verified with Playwright]
+
+### Notes for Developer
+- [Any important notes]
+</summary>
+
+This helps parse your summary correctly in the output logs.`;
+    }
 
     return prompt;
   }
@@ -1846,49 +1711,46 @@ This helps parse your summary correctly in the output logs.`;
     }
   ): Promise<void> {
     const finalProjectPath = options?.projectPath || projectPath;
-    const planningMode = options?.planningMode || "skip";
+    const planningMode = options?.planningMode || 'skip';
     const previousContent = options?.previousContent;
 
     // Check if this planning mode can generate a spec/plan that needs approval
     // - spec and full always generate specs
     // - lite only generates approval-ready content when requirePlanApproval is true
     const planningModeRequiresApproval =
-      planningMode === "spec" ||
-      planningMode === "full" ||
-      (planningMode === "lite" && options?.requirePlanApproval === true);
-    const requiresApproval =
-      planningModeRequiresApproval && options?.requirePlanApproval === true;
+      planningMode === 'spec' ||
+      planningMode === 'full' ||
+      (planningMode === 'lite' && options?.requirePlanApproval === true);
+    const requiresApproval = planningModeRequiresApproval && options?.requirePlanApproval === true;
 
     // CI/CD Mock Mode: Return early with mock response when AUTOMAKER_MOCK_AGENT is set
     // This prevents actual API calls during automated testing
-    if (process.env.AUTOMAKER_MOCK_AGENT === "true") {
-      console.log(
-        `[AutoMode] MOCK MODE: Skipping real agent execution for feature ${featureId}`
-      );
+    if (process.env.AUTOMAKER_MOCK_AGENT === 'true') {
+      console.log(`[AutoMode] MOCK MODE: Skipping real agent execution for feature ${featureId}`);
 
       // Simulate some work being done
       await this.sleep(500);
 
       // Emit mock progress events to simulate agent activity
-      this.emitAutoModeEvent("auto_mode_progress", {
+      this.emitAutoModeEvent('auto_mode_progress', {
         featureId,
-        content: "Mock agent: Analyzing the codebase...",
+        content: 'Mock agent: Analyzing the codebase...',
       });
 
       await this.sleep(300);
 
-      this.emitAutoModeEvent("auto_mode_progress", {
+      this.emitAutoModeEvent('auto_mode_progress', {
         featureId,
-        content: "Mock agent: Implementing the feature...",
+        content: 'Mock agent: Implementing the feature...',
       });
 
       await this.sleep(300);
 
       // Create a mock file with "yellow" content as requested in the test
-      const mockFilePath = path.join(workDir, "yellow.txt");
-      await secureFs.writeFile(mockFilePath, "yellow");
+      const mockFilePath = path.join(workDir, 'yellow.txt');
+      await secureFs.writeFile(mockFilePath, 'yellow');
 
-      this.emitAutoModeEvent("auto_mode_progress", {
+      this.emitAutoModeEvent('auto_mode_progress', {
         featureId,
         content: "Mock agent: Created yellow.txt file with content 'yellow'",
       });
@@ -1897,7 +1759,7 @@ This helps parse your summary correctly in the output logs.`;
 
       // Save mock agent output
       const featureDirForOutput = getFeatureDir(projectPath, featureId);
-      const outputPath = path.join(featureDirForOutput, "agent-output.md");
+      const outputPath = path.join(featureDirForOutput, 'agent-output.md');
 
       const mockOutput = `# Mock Agent Output
 
@@ -1914,9 +1776,7 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
       await secureFs.mkdir(path.dirname(outputPath), { recursive: true });
       await secureFs.writeFile(outputPath, mockOutput);
 
-      console.log(
-        `[AutoMode] MOCK MODE: Completed mock execution for feature ${featureId}`
-      );
+      console.log(`[AutoMode] MOCK MODE: Completed mock execution for feature ${featureId}`);
       return;
     }
 
@@ -1939,9 +1799,7 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
     // Get provider for this model
     const provider = ProviderFactory.getProviderForModel(finalModel);
 
-    console.log(
-      `[AutoMode] Using provider "${provider.getName()}" for model "${finalModel}"`
-    );
+    console.log(`[AutoMode] Using provider "${provider.getName()}" for model "${finalModel}"`);
 
     // Build prompt content with images using utility
     const { content: promptContent } = await buildPromptWithImages(
@@ -1973,13 +1831,13 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
     // Initialize with previous content if this is a follow-up, with a separator
     let responseText = previousContent
       ? `${previousContent}\n\n---\n\n## Follow-up Session\n\n`
-      : "";
+      : '';
     let specDetected = false;
 
     // Agent output goes to .automaker directory
     // Note: We use projectPath here, not workDir, because workDir might be a worktree path
     const featureDirForOutput = getFeatureDir(projectPath, featureId);
-    const outputPath = path.join(featureDirForOutput, "agent-output.md");
+    const outputPath = path.join(featureDirForOutput, 'agent-output.md');
 
     // Incremental file writing state
     let writeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -1992,10 +1850,7 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
         await secureFs.writeFile(outputPath, responseText);
       } catch (error) {
         // Log but don't crash - file write errors shouldn't stop execution
-        console.error(
-          `[AutoMode] Failed to write agent output for ${featureId}:`,
-          error
-        );
+        console.error(`[AutoMode] Failed to write agent output for ${featureId}:`, error);
       }
     };
 
@@ -2010,28 +1865,28 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
     };
 
     streamLoop: for await (const msg of stream) {
-      if (msg.type === "assistant" && msg.message?.content) {
+      if (msg.type === 'assistant' && msg.message?.content) {
         for (const block of msg.message.content) {
-          if (block.type === "text") {
+          if (block.type === 'text') {
             // Add separator before new text if we already have content and it doesn't end with newlines
-            if (responseText.length > 0 && !responseText.endsWith("\n\n")) {
-              if (responseText.endsWith("\n")) {
-                responseText += "\n";
+            if (responseText.length > 0 && !responseText.endsWith('\n\n')) {
+              if (responseText.endsWith('\n')) {
+                responseText += '\n';
               } else {
-                responseText += "\n\n";
+                responseText += '\n\n';
               }
             }
-            responseText += block.text || "";
+            responseText += block.text || '';
 
             // Check for authentication errors in the response
             if (
               block.text &&
-              (block.text.includes("Invalid API key") ||
-                block.text.includes("authentication_failed") ||
-                block.text.includes("Fix external API key"))
+              (block.text.includes('Invalid API key') ||
+                block.text.includes('authentication_failed') ||
+                block.text.includes('Fix external API key'))
             ) {
               throw new Error(
-                "Authentication failed: Invalid or expired API key. " +
+                'Authentication failed: Invalid or expired API key. ' +
                   "Please check your ANTHROPIC_API_KEY, or run 'claude login' to re-authenticate."
               );
             }
@@ -2043,12 +1898,12 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
             if (
               planningModeRequiresApproval &&
               !specDetected &&
-              responseText.includes("[SPEC_GENERATED]")
+              responseText.includes('[SPEC_GENERATED]')
             ) {
               specDetected = true;
 
               // Extract plan content (everything before the marker)
-              const markerIndex = responseText.indexOf("[SPEC_GENERATED]");
+              const markerIndex = responseText.indexOf('[SPEC_GENERATED]');
               const planContent = responseText.substring(0, markerIndex).trim();
 
               // Parse tasks from the generated spec (for spec and full modes)
@@ -2060,14 +1915,12 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
                 `[AutoMode] Parsed ${tasksTotal} tasks from spec for feature ${featureId}`
               );
               if (parsedTasks.length > 0) {
-                console.log(
-                  `[AutoMode] Tasks: ${parsedTasks.map((t) => t.id).join(", ")}`
-                );
+                console.log(`[AutoMode] Tasks: ${parsedTasks.map((t) => t.id).join(', ')}`);
               }
 
               // Update planSpec status to 'generated' and save content with parsed tasks
               await this.updateFeaturePlanSpec(projectPath, featureId, {
-                status: "generated",
+                status: 'generated',
                 content: planContent,
                 version: 1,
                 generatedAt: new Date().toISOString(),
@@ -2096,13 +1949,10 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
                   );
 
                   // CRITICAL: Register pending approval BEFORE emitting event
-                  const approvalPromise = this.waitForPlanApproval(
-                    featureId,
-                    projectPath
-                  );
+                  const approvalPromise = this.waitForPlanApproval(featureId, projectPath);
 
                   // Emit plan_approval_required event
-                  this.emitAutoModeEvent("plan_approval_required", {
+                  this.emitAutoModeEvent('plan_approval_required', {
                     featureId,
                     projectPath,
                     planContent: currentPlanContent,
@@ -2124,13 +1974,9 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
                       // If user provided edits, use the edited version
                       if (approvalResult.editedPlan) {
                         approvedPlanContent = approvalResult.editedPlan;
-                        await this.updateFeaturePlanSpec(
-                          projectPath,
-                          featureId,
-                          {
-                            content: approvalResult.editedPlan,
-                          }
-                        );
+                        await this.updateFeaturePlanSpec(projectPath, featureId, {
+                          content: approvalResult.editedPlan,
+                        });
                       } else {
                         approvedPlanContent = currentPlanContent;
                       }
@@ -2139,7 +1985,7 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
                       userFeedback = approvalResult.feedback;
 
                       // Emit approval event
-                      this.emitAutoModeEvent("plan_approved", {
+                      this.emitAutoModeEvent('plan_approved', {
                         featureId,
                         projectPath,
                         hasEdits: !!approvalResult.editedPlan,
@@ -2148,18 +1994,16 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
                     } else {
                       // User rejected - check if they provided feedback for revision
                       const hasFeedback =
-                        approvalResult.feedback &&
-                        approvalResult.feedback.trim().length > 0;
+                        approvalResult.feedback && approvalResult.feedback.trim().length > 0;
                       const hasEdits =
-                        approvalResult.editedPlan &&
-                        approvalResult.editedPlan.trim().length > 0;
+                        approvalResult.editedPlan && approvalResult.editedPlan.trim().length > 0;
 
                       if (!hasFeedback && !hasEdits) {
                         // No feedback or edits = explicit cancel
                         console.log(
                           `[AutoMode] Plan rejected without feedback for feature ${featureId}, cancelling`
                         );
-                        throw new Error("Plan cancelled by user");
+                        throw new Error('Plan cancelled by user');
                       }
 
                       // User wants revisions - regenerate the plan
@@ -2169,7 +2013,7 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
                       planVersion++;
 
                       // Emit revision event
-                      this.emitAutoModeEvent("plan_revision_requested", {
+                      this.emitAutoModeEvent('plan_revision_requested', {
                         featureId,
                         projectPath,
                         feedback: approvalResult.feedback,
@@ -2184,7 +2028,7 @@ This mock response was generated because AUTOMAKER_MOCK_AGENT=true was set.
 ${hasEdits ? approvalResult.editedPlan : currentPlanContent}
 
 ## User Feedback
-${approvalResult.feedback || "Please revise the plan based on the edits above."}
+${approvalResult.feedback || 'Please revise the plan based on the edits above.'}
 
 ## Instructions
 Please regenerate the specification incorporating the user's feedback.
@@ -2195,7 +2039,7 @@ After generating the revised spec, output:
 
                       // Update status to regenerating
                       await this.updateFeaturePlanSpec(projectPath, featureId, {
-                        status: "generating",
+                        status: 'generating',
                         version: planVersion,
                       });
 
@@ -2209,51 +2053,40 @@ After generating the revised spec, output:
                         abortController,
                       });
 
-                      let revisionText = "";
+                      let revisionText = '';
                       for await (const msg of revisionStream) {
-                        if (msg.type === "assistant" && msg.message?.content) {
+                        if (msg.type === 'assistant' && msg.message?.content) {
                           for (const block of msg.message.content) {
-                            if (block.type === "text") {
-                              revisionText += block.text || "";
-                              this.emitAutoModeEvent("auto_mode_progress", {
+                            if (block.type === 'text') {
+                              revisionText += block.text || '';
+                              this.emitAutoModeEvent('auto_mode_progress', {
                                 featureId,
                                 content: block.text,
                               });
                             }
                           }
-                        } else if (msg.type === "error") {
-                          throw new Error(
-                            msg.error || "Error during plan revision"
-                          );
-                        } else if (
-                          msg.type === "result" &&
-                          msg.subtype === "success"
-                        ) {
-                          revisionText += msg.result || "";
+                        } else if (msg.type === 'error') {
+                          throw new Error(msg.error || 'Error during plan revision');
+                        } else if (msg.type === 'result' && msg.subtype === 'success') {
+                          revisionText += msg.result || '';
                         }
                       }
 
                       // Extract new plan content
-                      const markerIndex =
-                        revisionText.indexOf("[SPEC_GENERATED]");
+                      const markerIndex = revisionText.indexOf('[SPEC_GENERATED]');
                       if (markerIndex > 0) {
-                        currentPlanContent = revisionText
-                          .substring(0, markerIndex)
-                          .trim();
+                        currentPlanContent = revisionText.substring(0, markerIndex).trim();
                       } else {
                         currentPlanContent = revisionText.trim();
                       }
 
                       // Re-parse tasks from revised plan
-                      const revisedTasks =
-                        parseTasksFromSpec(currentPlanContent);
-                      console.log(
-                        `[AutoMode] Revised plan has ${revisedTasks.length} tasks`
-                      );
+                      const revisedTasks = parseTasksFromSpec(currentPlanContent);
+                      console.log(`[AutoMode] Revised plan has ${revisedTasks.length} tasks`);
 
                       // Update planSpec with revised content
                       await this.updateFeaturePlanSpec(projectPath, featureId, {
-                        status: "generated",
+                        status: 'generated',
                         content: currentPlanContent,
                         version: planVersion,
                         tasks: revisedTasks,
@@ -2267,12 +2100,10 @@ After generating the revised spec, output:
                       responseText += revisionText;
                     }
                   } catch (error) {
-                    if ((error as Error).message.includes("cancelled")) {
+                    if ((error as Error).message.includes('cancelled')) {
                       throw error;
                     }
-                    throw new Error(
-                      `Plan approval failed: ${(error as Error).message}`
-                    );
+                    throw new Error(`Plan approval failed: ${(error as Error).message}`);
                   }
                 }
               } else {
@@ -2282,7 +2113,7 @@ After generating the revised spec, output:
                 );
 
                 // Emit info event for frontend
-                this.emitAutoModeEvent("plan_auto_approved", {
+                this.emitAutoModeEvent('plan_auto_approved', {
                   featureId,
                   projectPath,
                   planContent,
@@ -2300,7 +2131,7 @@ After generating the revised spec, output:
 
               // Update planSpec status to approved (handles both manual and auto-approval paths)
               await this.updateFeaturePlanSpec(projectPath, featureId, {
-                status: "approved",
+                status: 'approved',
                 approvedAt: new Date().toISOString(),
                 reviewedByUser: requiresApproval,
               });
@@ -2316,23 +2147,17 @@ After generating the revised spec, output:
                 );
 
                 // Execute each task with a separate agent
-                for (
-                  let taskIndex = 0;
-                  taskIndex < parsedTasks.length;
-                  taskIndex++
-                ) {
+                for (let taskIndex = 0; taskIndex < parsedTasks.length; taskIndex++) {
                   const task = parsedTasks[taskIndex];
 
                   // Check for abort
                   if (abortController.signal.aborted) {
-                    throw new Error("Feature execution aborted");
+                    throw new Error('Feature execution aborted');
                   }
 
                   // Emit task started
-                  console.log(
-                    `[AutoMode] Starting task ${task.id}: ${task.description}`
-                  );
-                  this.emitAutoModeEvent("auto_mode_task_started", {
+                  console.log(`[AutoMode] Starting task ${task.id}: ${task.description}`);
+                  this.emitAutoModeEvent('auto_mode_task_started', {
                     featureId,
                     projectPath,
                     taskId: task.id,
@@ -2365,45 +2190,38 @@ After generating the revised spec, output:
                     abortController,
                   });
 
-                  let taskOutput = "";
+                  let taskOutput = '';
 
                   // Process task stream
                   for await (const msg of taskStream) {
-                    if (msg.type === "assistant" && msg.message?.content) {
+                    if (msg.type === 'assistant' && msg.message?.content) {
                       for (const block of msg.message.content) {
-                        if (block.type === "text") {
-                          taskOutput += block.text || "";
-                          responseText += block.text || "";
-                          this.emitAutoModeEvent("auto_mode_progress", {
+                        if (block.type === 'text') {
+                          taskOutput += block.text || '';
+                          responseText += block.text || '';
+                          this.emitAutoModeEvent('auto_mode_progress', {
                             featureId,
                             content: block.text,
                           });
-                        } else if (block.type === "tool_use") {
-                          this.emitAutoModeEvent("auto_mode_tool", {
+                        } else if (block.type === 'tool_use') {
+                          this.emitAutoModeEvent('auto_mode_tool', {
                             featureId,
                             tool: block.name,
                             input: block.input,
                           });
                         }
                       }
-                    } else if (msg.type === "error") {
-                      throw new Error(
-                        msg.error || `Error during task ${task.id}`
-                      );
-                    } else if (
-                      msg.type === "result" &&
-                      msg.subtype === "success"
-                    ) {
-                      taskOutput += msg.result || "";
-                      responseText += msg.result || "";
+                    } else if (msg.type === 'error') {
+                      throw new Error(msg.error || `Error during task ${task.id}`);
+                    } else if (msg.type === 'result' && msg.subtype === 'success') {
+                      taskOutput += msg.result || '';
+                      responseText += msg.result || '';
                     }
                   }
 
                   // Emit task completed
-                  console.log(
-                    `[AutoMode] Task ${task.id} completed for feature ${featureId}`
-                  );
-                  this.emitAutoModeEvent("auto_mode_task_complete", {
+                  console.log(`[AutoMode] Task ${task.id} completed for feature ${featureId}`);
+                  this.emitAutoModeEvent('auto_mode_task_complete', {
                     featureId,
                     projectPath,
                     taskId: task.id,
@@ -2423,7 +2241,7 @@ After generating the revised spec, output:
                       // Phase changed, emit phase complete
                       const phaseMatch = task.phase.match(/Phase\s*(\d+)/i);
                       if (phaseMatch) {
-                        this.emitAutoModeEvent("auto_mode_phase_complete", {
+                        this.emitAutoModeEvent('auto_mode_phase_complete', {
                           featureId,
                           projectPath,
                           phaseNumber: parseInt(phaseMatch[1], 10),
@@ -2443,7 +2261,7 @@ After generating the revised spec, output:
                 );
 
                 const continuationPrompt = `The plan/specification has been approved. Now implement it.
-${userFeedback ? `\n## User Feedback\n${userFeedback}\n` : ""}
+${userFeedback ? `\n## User Feedback\n${userFeedback}\n` : ''}
 ## Approved Plan
 
 ${approvedPlanContent}
@@ -2462,76 +2280,65 @@ Implement all the changes described in the plan above.`;
                 });
 
                 for await (const msg of continuationStream) {
-                  if (msg.type === "assistant" && msg.message?.content) {
+                  if (msg.type === 'assistant' && msg.message?.content) {
                     for (const block of msg.message.content) {
-                      if (block.type === "text") {
-                        responseText += block.text || "";
-                        this.emitAutoModeEvent("auto_mode_progress", {
+                      if (block.type === 'text') {
+                        responseText += block.text || '';
+                        this.emitAutoModeEvent('auto_mode_progress', {
                           featureId,
                           content: block.text,
                         });
-                      } else if (block.type === "tool_use") {
-                        this.emitAutoModeEvent("auto_mode_tool", {
+                      } else if (block.type === 'tool_use') {
+                        this.emitAutoModeEvent('auto_mode_tool', {
                           featureId,
                           tool: block.name,
                           input: block.input,
                         });
                       }
                     }
-                  } else if (msg.type === "error") {
-                    throw new Error(
-                      msg.error || "Unknown error during implementation"
-                    );
-                  } else if (
-                    msg.type === "result" &&
-                    msg.subtype === "success"
-                  ) {
-                    responseText += msg.result || "";
+                  } else if (msg.type === 'error') {
+                    throw new Error(msg.error || 'Unknown error during implementation');
+                  } else if (msg.type === 'result' && msg.subtype === 'success') {
+                    responseText += msg.result || '';
                   }
                 }
               }
 
-              console.log(
-                `[AutoMode] Implementation completed for feature ${featureId}`
-              );
+              console.log(`[AutoMode] Implementation completed for feature ${featureId}`);
               // Exit the original stream loop since continuation is done
               break streamLoop;
             }
 
             // Only emit progress for non-marker text (marker was already handled above)
             if (!specDetected) {
-              this.emitAutoModeEvent("auto_mode_progress", {
+              this.emitAutoModeEvent('auto_mode_progress', {
                 featureId,
                 content: block.text,
               });
             }
-          } else if (block.type === "tool_use") {
+          } else if (block.type === 'tool_use') {
             // Emit event for real-time UI
-            this.emitAutoModeEvent("auto_mode_tool", {
+            this.emitAutoModeEvent('auto_mode_tool', {
               featureId,
               tool: block.name,
               input: block.input,
             });
 
             // Also add to file output for persistence
-            if (responseText.length > 0 && !responseText.endsWith("\n")) {
-              responseText += "\n";
+            if (responseText.length > 0 && !responseText.endsWith('\n')) {
+              responseText += '\n';
             }
             responseText += `\n🔧 Tool: ${block.name}\n`;
             if (block.input) {
-              responseText += `Input: ${JSON.stringify(
-                block.input,
-                null,
-                2
-              )}\n`;
+              responseText += `Input: ${JSON.stringify(block.input, null, 2)}\n`;
             }
             scheduleWrite();
           }
         }
-      } else if (msg.type === "error") {
+      } else if (msg.type === 'error') {
         // Handle error messages
-        throw new Error(msg.error || "Unknown error");
-      } else if (msg.type === "result" && msg.subtype === "success") {
+        throw new Error(msg.error || 'Unknown error');
+      } else if (msg.type === 'result' && msg.subtype === 'success') {
         // Don't replace responseText - the accumulated content is the full history
         // The msg.result is just a summary which would lose all tool use details
         // Just ensure final write happens
@@ -2570,16 +2377,9 @@ ${context}
 ## Instructions
 Review the previous work and continue the implementation. If the feature appears complete, verify it works correctly.`;
 
-    return this.executeFeature(
-      projectPath,
-      featureId,
-      useWorktrees,
-      false,
-      undefined,
-      {
-        continuationPrompt: prompt,
-      }
-    );
+    return this.executeFeature(projectPath, featureId, useWorktrees, false, undefined, {
+      continuationPrompt: prompt,
+    });
   }
 
   /**
@@ -2604,8 +2404,8 @@ You are executing a specific task as part of a larger feature implementation.
 
 **Task ID:** ${task.id}
 **Description:** ${task.description}
-${task.filePath ? `**Primary File:** ${task.filePath}` : ""}
-${task.phase ? `**Phase:** ${task.phase}` : ""}
+${task.filePath ? `**Primary File:** ${task.filePath}` : ''}
+${task.phase ? `**Phase:** ${task.phase}` : ''}
 
 ## Context
 
@@ -2614,7 +2414,7 @@ ${task.phase ? `**Phase:** ${task.phase}` : ""}
     // Show what's already done
     if (completedTasks.length > 0) {
       prompt += `### Already Completed (${completedTasks.length} tasks)
-${completedTasks.map((t) => `- [x] ${t.id}: ${t.description}`).join("\n")}
+${completedTasks.map((t) => `- [x] ${t.id}: ${t.description}`).join('\n')}
 
 `;
     }
@@ -2625,8 +2425,8 @@ ${completedTasks.map((t) => `- [x] ${t.id}: ${t.description}`).join("\n")}
 ${remainingTasks
   .slice(0, 3)
   .map((t) => `- [ ] ${t.id}: ${t.description}`)
-  .join("\n")}
-${remainingTasks.length > 3 ? `... and ${remainingTasks.length - 3} more tasks` : ""}
+  .join('\n')}
+${remainingTasks.length > 3 ? `... and ${remainingTasks.length - 3} more tasks` : ''}
 
 `;
     }
@@ -2662,12 +2462,9 @@ Begin implementing task ${task.id} now.`;
    * All auto-mode events are sent as type "auto-mode:event" with the actual
    * event type and data in the payload.
    */
-  private emitAutoModeEvent(
-    eventType: string,
-    data: Record<string, unknown>
-  ): void {
+  private emitAutoModeEvent(eventType: string, data: Record<string, unknown>): void {
     // Wrap the event in auto-mode:event format expected by the client
-    this.events.emit("auto-mode:event", {
+    this.events.emit('auto-mode:event', {
       type: eventType,
       ...data,
     });
@@ -2680,17 +2477,17 @@ Begin implementing task ${task.id} now.`;
       // If signal is provided and already aborted, reject immediately
       if (signal?.aborted) {
         clearTimeout(timeout);
-        reject(new Error("Aborted"));
+        reject(new Error('Aborted'));
         return;
       }
 
       // Listen for abort signal
       if (signal) {
         signal.addEventListener(
-          "abort",
+          'abort',
           () => {
             clearTimeout(timeout);
-            reject(new Error("Aborted"));
+            reject(new Error('Aborted'));
           },
           { once: true }
         );

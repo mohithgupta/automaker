@@ -4,17 +4,10 @@
  */
 
 // Export types and constants
-export {
-  BINARY_EXTENSIONS,
-  GIT_STATUS_MAP,
-  type FileStatus,
-} from './types.js';
+export { BINARY_EXTENSIONS, GIT_STATUS_MAP, type FileStatus } from './types.js';
 
 // Export status utilities
-export {
-  isGitRepo,
-  parseGitStatus,
-} from './status.js';
+export { isGitRepo, parseGitStatus } from './status.js';
 
 // Export diff utilities
 export {

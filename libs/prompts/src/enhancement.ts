@@ -10,10 +10,10 @@
  * Uses chain-of-thought prompting with few-shot examples for consistent results.
  */
 
-import type { EnhancementMode, EnhancementExample } from "@automaker/types";
+import type { EnhancementMode, EnhancementExample } from '@automaker/types';
 
 // Re-export enhancement types from shared package
-export type { EnhancementMode, EnhancementExample } from "@automaker/types";
+export type { EnhancementMode, EnhancementExample } from '@automaker/types';
 
 /**
  * System prompt for the "improve" enhancement mode.
@@ -142,7 +142,7 @@ Output the original description followed by a clear "Acceptance Criteria:" secti
  */
 export const IMPROVE_EXAMPLES: EnhancementExample[] = [
   {
-    input: "add dark mode",
+    input: 'add dark mode',
     output: `Add Dark Mode Theme Support
 
 Implement a dark mode option that allows users to switch between light and dark themes throughout the application.
@@ -155,7 +155,7 @@ Requirements:
 - Ensure smooth transition when switching themes`,
   },
   {
-    input: "fix the login bug",
+    input: 'fix the login bug',
     output: `Fix Login Authentication Flow
 
 Investigate and resolve issues preventing users from successfully logging in to the application.
@@ -168,7 +168,7 @@ Requirements:
 - Test with various credential combinations (valid, invalid, edge cases)`,
   },
   {
-    input: "make it faster",
+    input: 'make it faster',
     output: `Improve Application Performance
 
 Optimize application loading and response times to enhance user experience.
@@ -188,7 +188,7 @@ Requirements:
  */
 export const TECHNICAL_EXAMPLES: EnhancementExample[] = [
   {
-    input: "Add user profile page",
+    input: 'Add user profile page',
     output: `Add User Profile Page
 
 Create a dedicated profile page for viewing and editing user information.
@@ -209,7 +209,7 @@ Components:
 Security: Ensure users can only edit their own profile (auth middleware)`,
   },
   {
-    input: "Add search functionality",
+    input: 'Add search functionality',
     output: `Add Search Functionality
 
 Implement full-text search across application content.
@@ -271,7 +271,7 @@ Enhancements:
  */
 export const ACCEPTANCE_EXAMPLES: EnhancementExample[] = [
   {
-    input: "Add password reset functionality",
+    input: 'Add password reset functionality',
     output: `Add Password Reset Functionality
 
 Allow users to reset their password via email when they forget it.
@@ -291,7 +291,7 @@ Acceptance Criteria:
 6. Given a reset link older than 1 hour, when a user clicks it, then they should see an expiration message with option to request a new link.`,
   },
   {
-    input: "Shopping cart checkout",
+    input: 'Shopping cart checkout',
     output: `Shopping Cart Checkout
 
 Implement the checkout flow for purchasing items in the shopping cart.
@@ -348,10 +348,10 @@ export interface EnhancementPromptConfig {
  * Descriptions for each enhancement mode
  */
 const MODE_DESCRIPTIONS: Record<EnhancementMode, string> = {
-  improve: "Transform vague requests into clear, actionable task descriptions",
-  technical: "Add implementation details and technical specifications",
-  simplify: "Make verbose descriptions concise and focused",
-  acceptance: "Add testable acceptance criteria to task descriptions",
+  improve: 'Transform vague requests into clear, actionable task descriptions',
+  technical: 'Add implementation details and technical specifications',
+  simplify: 'Make verbose descriptions concise and focused',
+  acceptance: 'Add testable acceptance criteria to task descriptions',
 };
 
 /**
@@ -362,7 +362,7 @@ const MODE_DESCRIPTIONS: Record<EnhancementMode, string> = {
  */
 export function getEnhancementPrompt(mode: string): EnhancementPromptConfig {
   const normalizedMode = mode.toLowerCase() as EnhancementMode;
-  const validMode = normalizedMode in SYSTEM_PROMPTS ? normalizedMode : "improve";
+  const validMode = normalizedMode in SYSTEM_PROMPTS ? normalizedMode : 'improve';
 
   return {
     systemPrompt: SYSTEM_PROMPTS[validMode],
@@ -415,7 +415,7 @@ export function buildUserPrompt(
       (example, index) =>
         `Example ${index + 1}:\nInput: ${example.input}\nOutput: ${example.output}`
     )
-    .join("\n\n---\n\n");
+    .join('\n\n---\n\n');
 
   return `Here are some examples of how to enhance task descriptions:
 

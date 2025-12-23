@@ -1,7 +1,7 @@
 /**
  * Error type classification
  */
-export type ErrorType = "authentication" | "cancellation" | "abort" | "execution" | "unknown";
+export type ErrorType = 'authentication' | 'cancellation' | 'abort' | 'execution' | 'unknown';
 
 /**
  * Classified error information

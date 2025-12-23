@@ -1,18 +1,14 @@
-import { useState } from "react";
-import { Feature } from "@/store/app-store";
-import { cn } from "@/lib/utils";
-import {
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { Feature } from '@/store/app-store';
+import { cn } from '@/lib/utils';
+import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   GripVertical,
   Edit,
@@ -23,10 +19,10 @@ import {
   ChevronDown,
   ChevronUp,
   Cpu,
-} from "lucide-react";
-import { CountUpTimer } from "@/components/ui/count-up-timer";
-import { formatModelName, DEFAULT_MODEL } from "@/lib/agent-context-parser";
-import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+} from 'lucide-react';
+import { CountUpTimer } from '@/components/ui/count-up-timer';
+import { formatModelName, DEFAULT_MODEL } from '@/lib/agent-context-parser';
+import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 
 interface CardHeaderProps {
   feature: Feature;
@@ -100,9 +96,7 @@ export function CardHeaderSection({
               <div className="px-2 py-1.5 text-[10px] text-muted-foreground border-t mt-1 pt-1.5">
                 <div className="flex items-center gap-1">
                   <Cpu className="w-3 h-3" />
-                  <span>
-                    {formatModelName(feature.model ?? DEFAULT_MODEL)}
-                  </span>
+                  <span>{formatModelName(feature.model ?? DEFAULT_MODEL)}</span>
                 </div>
               </div>
             </DropdownMenuContent>
@@ -111,7 +105,7 @@ export function CardHeaderSection({
       )}
 
       {/* Backlog header */}
-      {!isCurrentAutoTask && feature.status === "backlog" && (
+      {!isCurrentAutoTask && feature.status === 'backlog' && (
         <div className="absolute top-2 right-2">
           <Button
             variant="ghost"
@@ -128,8 +122,7 @@ export function CardHeaderSection({
 
       {/* Waiting approval / Verified header */}
       {!isCurrentAutoTask &&
-        (feature.status === "waiting_approval" ||
-          feature.status === "verified") && (
+        (feature.status === 'waiting_approval' || feature.status === 'verified') && (
           <>
             <div className="absolute top-2 right-2 flex items-center gap-1">
               <Button
@@ -142,9 +135,7 @@ export function CardHeaderSection({
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 data-testid={`edit-${
-                  feature.status === "waiting_approval"
-                    ? "waiting"
-                    : "verified"
+                  feature.status === 'waiting_approval' ? 'waiting' : 'verified'
                 }-${feature.id}`}
                 title="Edit"
               >
@@ -161,9 +152,7 @@ export function CardHeaderSection({
                   }}
                   onPointerDown={(e) => e.stopPropagation()}
                   data-testid={`logs-${
-                    feature.status === "waiting_approval"
-                      ? "waiting"
-                      : "verified"
+                    feature.status === 'waiting_approval' ? 'waiting' : 'verified'
                   }-${feature.id}`}
                   title="Logs"
                 >
@@ -177,9 +166,7 @@ export function CardHeaderSection({
                 onClick={handleDeleteClick}
                 onPointerDown={(e) => e.stopPropagation()}
                 data-testid={`delete-${
-                  feature.status === "waiting_approval"
-                    ? "waiting"
-                    : "verified"
+                  feature.status === 'waiting_approval' ? 'waiting' : 'verified'
                 }-${feature.id}`}
                 title="Delete"
               >
@@ -190,7 +177,7 @@ export function CardHeaderSection({
         )}
 
       {/* In progress header */}
-      {!isCurrentAutoTask && feature.status === "in_progress" && (
+      {!isCurrentAutoTask && feature.status === 'in_progress' && (
         <>
           <div className="absolute top-2 right-2 flex items-center gap-1">
             <Button
@@ -246,9 +233,7 @@ export function CardHeaderSection({
                 <div className="px-2 py-1.5 text-[10px] text-muted-foreground border-t mt-1 pt-1.5">
                   <div className="flex items-center gap-1">
                     <Cpu className="w-3 h-3" />
-                    <span>
-                      {formatModelName(feature.model ?? DEFAULT_MODEL)}
-                    </span>
+                    <span>{formatModelName(feature.model ?? DEFAULT_MODEL)}</span>
                   </div>
                 </div>
               </DropdownMenuContent>
@@ -271,9 +256,7 @@ export function CardHeaderSection({
           {feature.titleGenerating ? (
             <div className="flex items-center gap-1.5 mb-1">
               <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
-              <span className="text-xs text-muted-foreground italic">
-                Generating title...
-              </span>
+              <span className="text-xs text-muted-foreground italic">Generating title...</span>
             </div>
           ) : feature.title ? (
             <CardTitle className="text-sm font-semibold text-foreground mb-1 line-clamp-2">
@@ -282,13 +265,13 @@ export function CardHeaderSection({
           ) : null}
           <CardDescription
             className={cn(
-              "text-xs leading-snug break-words hyphens-auto overflow-hidden text-muted-foreground",
-              !isDescriptionExpanded && "line-clamp-3"
+              'text-xs leading-snug break-words hyphens-auto overflow-hidden text-muted-foreground',
+              !isDescriptionExpanded && 'line-clamp-3'
             )}
           >
             {feature.description || feature.summary || feature.id}
           </CardDescription>
-          {(feature.description || feature.summary || "").length > 100 && (
+          {(feature.description || feature.summary || '').length > 100 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -327,4 +310,3 @@ export function CardHeaderSection({
     </CardHeader>
   );
 }
-

@@ -15,6 +15,7 @@ npm install @automaker/model-resolver
 ## Exports
 
 ### Model Resolution
+
 Convert model aliases to full model identifiers.
 
 ```typescript
@@ -41,6 +42,7 @@ const model5 = resolveModelString('claude-opus-4-5-20251101');
 ```
 
 ### Get Effective Model
+
 Get the actual model that will be used.
 
 ```typescript
@@ -50,11 +52,12 @@ import { getEffectiveModel } from '@automaker/model-resolver';
 const model = getEffectiveModel({
   requestedModel: 'sonnet',
   featureModel: undefined,
-  defaultModel: 'claude-sonnet-4-20250514'
+  defaultModel: 'claude-sonnet-4-20250514',
 });
 ```
 
 ### Model Constants
+
 Access model mappings and defaults.
 
 ```typescript
@@ -62,14 +65,14 @@ import { DEFAULT_MODELS } from '@automaker/model-resolver';
 import { CLAUDE_MODEL_MAP } from '@automaker/types';
 
 // Default models for different contexts
-console.log(DEFAULT_MODELS.claude);     // 'claude-sonnet-4-20250514'
-console.log(DEFAULT_MODELS.autoMode);   // 'claude-sonnet-4-20250514'
-console.log(DEFAULT_MODELS.chat);       // 'claude-sonnet-4-20250514'
+console.log(DEFAULT_MODELS.claude); // 'claude-sonnet-4-20250514'
+console.log(DEFAULT_MODELS.autoMode); // 'claude-sonnet-4-20250514'
+console.log(DEFAULT_MODELS.chat); // 'claude-sonnet-4-20250514'
 
 // Model alias mappings
-console.log(CLAUDE_MODEL_MAP.haiku);    // 'claude-haiku-4-5'
-console.log(CLAUDE_MODEL_MAP.sonnet);   // 'claude-sonnet-4-20250514'
-console.log(CLAUDE_MODEL_MAP.opus);     // 'claude-opus-4-5-20251101'
+console.log(CLAUDE_MODEL_MAP.haiku); // 'claude-haiku-4-5'
+console.log(CLAUDE_MODEL_MAP.sonnet); // 'claude-sonnet-4-20250514'
+console.log(CLAUDE_MODEL_MAP.opus); // 'claude-opus-4-5-20251101'
 ```
 
 ## Usage Example
@@ -80,10 +83,7 @@ import type { Feature } from '@automaker/types';
 
 function prepareFeatureExecution(feature: Feature) {
   // Resolve model from feature or use default
-  const model = resolveModelString(
-    feature.model,
-    DEFAULT_MODELS.autoMode
-  );
+  const model = resolveModelString(feature.model, DEFAULT_MODELS.autoMode);
 
   console.log(`Executing feature with model: ${model}`);
 
@@ -99,7 +99,7 @@ const feature: Feature = {
   id: 'auth-feature',
   category: 'backend',
   description: 'Add authentication',
-  model: 'opus' // User-friendly alias
+  model: 'opus', // User-friendly alias
 };
 
 prepareFeatureExecution(feature);
@@ -109,11 +109,13 @@ prepareFeatureExecution(feature);
 ## Supported Models
 
 ### Current Model Aliases
+
 - `haiku` → `claude-haiku-4-5`
 - `sonnet` → `claude-sonnet-4-20250514`
 - `opus` → `claude-opus-4-5-20251101`
 
 ### Model Selection Guide
+
 - **Haiku**: Fast responses, simple tasks, lower cost
 - **Sonnet**: Balanced performance, most tasks (recommended default)
 - **Opus**: Maximum capability, complex reasoning, highest cost

@@ -2,14 +2,11 @@
  * GET /config endpoint - Get workspace configuration status
  */
 
-import type { Request, Response } from "express";
-import fs from "fs/promises";
-import path from "path";
-import {
-  getAllowedRootDirectory,
-  getDataDirectory,
-} from "@automaker/platform";
-import { getErrorMessage, logError } from "../common.js";
+import type { Request, Response } from 'express';
+import * as secureFs from '../../../lib/secure-fs.js';
+import path from 'path';
+import { getAllowedRootDirectory, getDataDirectory } from '@automaker/platform';
+import { getErrorMessage, logError } from '../common.js';
 
 export function createConfigHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
@@ -30,12 +27,12 @@ export function createConfigHandler() {
       // Check if the directory exists
       try {
         const resolvedWorkspaceDir = path.resolve(allowedRootDirectory);
-        const stats = await fs.stat(resolvedWorkspaceDir);
+        const stats = await secureFs.stat(resolvedWorkspaceDir);
         if (!stats.isDirectory()) {
           res.json({
             success: true,
             configured: false,
-            error: "ALLOWED_ROOT_DIRECTORY is not a valid directory",
+            error: 'ALLOWED_ROOT_DIRECTORY is not a valid directory',
           });
           return;
         }
@@ -50,11 +47,11 @@ export function createConfigHandler() {
         res.json({
           success: true,
           configured: false,
-          error: "ALLOWED_ROOT_DIRECTORY path does not exist",
+          error: 'ALLOWED_ROOT_DIRECTORY path does not exist',
         });
       }
     } catch (error) {
-      logError(error, "Get workspace config failed");
+      logError(error, 'Get workspace config failed');
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -20,9 +20,11 @@ libs/
 ## When to Use Each Package
 
 ### @automaker/types
+
 **Use when:** You need type definitions for any AutoMaker concept.
 
 **Import for:**
+
 - `Feature` - Feature interface with all properties
 - `ExecuteOptions` - Claude agent execution options
 - `ConversationMessage` - Chat message format
@@ -31,6 +33,7 @@ libs/
 - `DEFAULT_MODELS` - Default model configurations
 
 **Example:**
+
 ```typescript
 import type { Feature, ExecuteOptions } from '@automaker/types';
 ```
@@ -38,9 +41,11 @@ import type { Feature, ExecuteOptions } from '@automaker/types';
 **Never import from:** `services/feature-loader`, `providers/types`
 
 ### @automaker/utils
+
 **Use when:** You need common utilities like logging, error handling, or image processing.
 
 **Import for:**
+
 - `createLogger(context)` - Structured logging
 - `isAbortError(error)` - Error type checking
 - `classifyError(error)` - Error classification
@@ -49,6 +54,7 @@ import type { Feature, ExecuteOptions } from '@automaker/types';
 - `extractTextFromContent()` - Message parsing
 
 **Example:**
+
 ```typescript
 import { createLogger, classifyError } from '@automaker/utils';
 ```
@@ -56,9 +62,11 @@ import { createLogger, classifyError } from '@automaker/utils';
 **Never import from:** `lib/logger`, `lib/error-handler`, `lib/prompt-builder`, `lib/image-handler`
 
 ### @automaker/prompts
+
 **Use when:** You need AI prompt templates for text enhancement or other AI-powered features.
 
 **Import for:**
+
 - `getEnhancementPrompt(mode)` - Get complete prompt for enhancement mode
 - `getSystemPrompt(mode)` - Get system prompt for specific mode
 - `getExamples(mode)` - Get few-shot examples for a mode
@@ -70,6 +78,7 @@ import { createLogger, classifyError } from '@automaker/utils';
 - `ACCEPTANCE_SYSTEM_PROMPT` - System prompt for adding acceptance criteria
 
 **Example:**
+
 ```typescript
 import { getEnhancementPrompt, isValidEnhancementMode } from '@automaker/prompts';
 
@@ -82,15 +91,18 @@ if (isValidEnhancementMode('improve')) {
 **Never import from:** `lib/enhancement-prompts`
 
 **Enhancement modes:**
+
 - `improve` - Transform vague requests into clear, actionable tasks
 - `technical` - Add implementation details and technical specifications
 - `simplify` - Make verbose descriptions concise and focused
 - `acceptance` - Add testable acceptance criteria
 
 ### @automaker/platform
+
 **Use when:** You need to work with AutoMaker's directory structure or spawn processes.
 
 **Import for:**
+
 - `getAutomakerDir(projectPath)` - Get .automaker directory
 - `getFeaturesDir(projectPath)` - Get features directory
 - `getFeatureDir(projectPath, featureId)` - Get specific feature directory
@@ -99,6 +111,7 @@ if (isValidEnhancementMode('improve')) {
 - `initAllowedPaths()` - Security path validation
 
 **Example:**
+
 ```typescript
 import { getFeatureDir, ensureAutomakerDir } from '@automaker/platform';
 ```
@@ -106,13 +119,16 @@ import { getFeatureDir, ensureAutomakerDir } from '@automaker/platform';
 **Never import from:** `lib/automaker-paths`, `lib/subprocess-manager`, `lib/security`
 
 ### @automaker/model-resolver
+
 **Use when:** You need to convert model aliases to full model IDs.
 
 **Import for:**
+
 - `resolveModelString(modelOrAlias)` - Convert alias to full ID
 - `DEFAULT_MODELS` - Access default models
 
 **Example:**
+
 ```typescript
 import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
 
@@ -123,19 +139,23 @@ const modelId = resolveModelString('sonnet'); // → 'claude-sonnet-4-20250514'
 **Never import from:** `lib/model-resolver`
 
 **Model aliases:**
+
 - `haiku` → `claude-haiku-4-5` (fast, simple tasks)
 - `sonnet` → `claude-sonnet-4-20250514` (balanced, recommended)
 - `opus` → `claude-opus-4-5-20251101` (maximum capability)
 
 ### @automaker/dependency-resolver
+
 **Use when:** You need to order features by dependencies or check if dependencies are satisfied.
 
 **Import for:**
+
 - `resolveDependencies(features)` - Topological sort with priority
 - `areDependenciesSatisfied(feature, allFeatures)` - Check if ready to execute
 - `getBlockingDependencies(feature, allFeatures)` - Get incomplete dependencies
 
 **Example:**
+
 ```typescript
 import { resolveDependencies, areDependenciesSatisfied } from '@automaker/dependency-resolver';
 
@@ -152,13 +172,16 @@ if (!hasCycle) {
 **Never import from:** `lib/dependency-resolver`
 
 **Used in:**
+
 - Auto-mode feature execution (server)
 - Board view feature ordering (UI)
 
 ### @automaker/git-utils
+
 **Use when:** You need git operations, status parsing, or diff generation.
 
 **Import for:**
+
 - `isGitRepo(path)` - Check if path is a git repository
 - `parseGitStatus(output)` - Parse `git status --porcelain` output
 - `getGitRepositoryDiffs(path)` - Get complete diffs (tracked + untracked)
@@ -166,6 +189,7 @@ if (!hasCycle) {
 - `listAllFilesInDirectory()` - List files excluding build artifacts
 
 **Example:**
+
 ```typescript
 import { isGitRepo, getGitRepositoryDiffs } from '@automaker/git-utils';
 
@@ -178,6 +202,7 @@ if (await isGitRepo(projectPath)) {
 **Never import from:** `routes/common`
 
 **Handles:**
+
 - Binary file detection
 - Large file handling (>1MB)
 - Untracked file diffs
@@ -196,11 +221,7 @@ import { getFeatureDir } from '@automaker/platform';
 
 const logger = createLogger('FeatureExecutor');
 
-async function executeFeature(
-  feature: Feature,
-  allFeatures: Feature[],
-  projectPath: string
-) {
+async function executeFeature(feature: Feature, allFeatures: Feature[], projectPath: string) {
   // Check dependencies
   if (!areDependenciesSatisfied(feature, allFeatures)) {
     logger.warn(`Dependencies not satisfied for ${feature.id}`);
@@ -217,7 +238,7 @@ async function executeFeature(
     // Execute with Claude
     const options: ExecuteOptions = {
       model,
-      temperature: 0.7
+      temperature: 0.7,
     };
 
     await runAgent(featureDir, options);
@@ -247,12 +268,14 @@ async function analyzeChanges(projectPath: string) {
   }
 
   // Group by status
-  const modified = files.filter(f => f.status === 'M');
-  const added = files.filter(f => f.status === 'A');
-  const deleted = files.filter(f => f.status === 'D');
-  const untracked = files.filter(f => f.status === '?');
+  const modified = files.filter((f) => f.status === 'M');
+  const added = files.filter((f) => f.status === 'A');
+  const deleted = files.filter((f) => f.status === 'D');
+  const untracked = files.filter((f) => f.status === '?');
 
-  logger.info(`Changes: ${modified.length}M ${added.length}A ${deleted.length}D ${untracked.length}U`);
+  logger.info(
+    `Changes: ${modified.length}M ${added.length}A ${deleted.length}D ${untracked.length}U`
+  );
 
   return diff;
 }
@@ -276,7 +299,7 @@ function orderAndFilterFeatures(features: Feature[]): Feature[] {
   }
 
   // Filter to only ready features
-  const readyFeatures = orderedFeatures.filter(feature => {
+  const readyFeatures = orderedFeatures.filter((feature) => {
     const blocking = getBlockingDependencies(feature, features);
     if (blocking.length > 0) {
       logger.debug(`${feature.id} blocked by: ${blocking.join(', ')}`);
@@ -392,6 +415,7 @@ npm install  # Installs and links workspace packages
 ## Module Format
 
 All packages use ES modules (`type: "module"`) with NodeNext module resolution:
+
 - Requires explicit `.js` extensions in import statements
 - Compatible with both Node.js (server) and Vite (UI)
 - Centralized ESM configuration in `libs/tsconfig.base.json`
@@ -412,6 +436,7 @@ import { Feature } from '../../../src/services/feature-loader';
 ## Summary for LLMs
 
 **Quick reference:**
+
 - Types → `@automaker/types`
 - Logging/Errors/Utils → `@automaker/utils`
 - AI Prompts → `@automaker/prompts`

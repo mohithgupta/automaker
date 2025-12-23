@@ -1,11 +1,10 @@
-
-import { useState, useEffect, useCallback } from "react";
-import { Bot, Folder, Loader2, RefreshCw, Square, Activity } from "lucide-react";
-import { getElectronAPI, RunningAgent } from "@/lib/electron";
-import { useAppStore } from "@/store/app-store";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useNavigate } from "@tanstack/react-router";
+import { useState, useEffect, useCallback } from 'react';
+import { Bot, Folder, Loader2, RefreshCw, Square, Activity } from 'lucide-react';
+import { getElectronAPI, RunningAgent } from '@/lib/electron';
+import { useAppStore } from '@/store/app-store';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useNavigate } from '@tanstack/react-router';
 
 export function RunningAgentsView() {
   const [runningAgents, setRunningAgents] = useState<RunningAgent[]>([]);
@@ -24,7 +23,7 @@ export function RunningAgentsView() {
         }
       }
     } catch (error) {
-      console.error("[RunningAgentsView] Error fetching running agents:", error);
+      console.error('[RunningAgentsView] Error fetching running agents:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -52,10 +51,7 @@ export function RunningAgentsView() {
 
     const unsubscribe = api.autoMode.onEvent((event) => {
       // When a feature completes or errors, refresh the list
-      if (
-        event.type === "auto_mode_feature_complete" ||
-        event.type === "auto_mode_error"
-      ) {
+      if (event.type === 'auto_mode_feature_complete' || event.type === 'auto_mode_error') {
         fetchRunningAgents();
       }
     });
@@ -70,27 +66,33 @@ export function RunningAgentsView() {
     fetchRunningAgents();
   }, [fetchRunningAgents]);
 
-  const handleStopAgent = useCallback(async (featureId: string) => {
-    try {
-      const api = getElectronAPI();
-      if (api.autoMode) {
-        await api.autoMode.stopFeature(featureId);
-        // Refresh list after stopping
-        fetchRunningAgents();
+  const handleStopAgent = useCallback(
+    async (featureId: string) => {
+      try {
+        const api = getElectronAPI();
+        if (api.autoMode) {
+          await api.autoMode.stopFeature(featureId);
+          // Refresh list after stopping
+          fetchRunningAgents();
+        }
+      } catch (error) {
+        console.error('[RunningAgentsView] Error stopping agent:', error);
       }
-    } catch (error) {
-      console.error("[RunningAgentsView] Error stopping agent:", error);
-    }
-  }, [fetchRunningAgents]);
+    },
+    [fetchRunningAgents]
+  );
 
-  const handleNavigateToProject = useCallback((agent: RunningAgent) => {
-    // Find the project by path
-    const project = projects.find((p) => p.path === agent.projectPath);
-    if (project) {
-      setCurrentProject(project);
-      navigate({ to: "/board" });
-    }
-  }, [projects, setCurrentProject, navigate]);
+  const handleNavigateToProject = useCallback(
+    (agent: RunningAgent) => {
+      // Find the project by path
+      const project = projects.find((p) => p.path === agent.projectPath);
+      if (project) {
+        setCurrentProject(project);
+        navigate({ to: '/board' });
+      }
+    },
+    [projects, setCurrentProject, navigate]
+  );
 
   if (loading) {
     return (
@@ -112,20 +114,13 @@ export function RunningAgentsView() {
             <h1 className="text-2xl font-bold">Running Agents</h1>
             <p className="text-sm text-muted-foreground">
               {runningAgents.length === 0
-                ? "No agents currently running"
-                : `${runningAgents.length} agent${runningAgents.length === 1 ? "" : "s"} running across all projects`}
+                ? 'No agents currently running'
+                : `${runningAgents.length} agent${runningAgents.length === 1 ? '' : 's'} running across all projects`}
             </p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={refreshing}
-        >
-          <RefreshCw
-            className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")}
-          />
+        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+          <RefreshCw className={cn('h-4 w-4 mr-2', refreshing && 'animate-spin')} />
           Refresh
         </Button>
       </div>
@@ -138,8 +133,8 @@ export function RunningAgentsView() {
           </div>
           <h2 className="text-lg font-medium mb-2">No Running Agents</h2>
           <p className="text-muted-foreground max-w-md">
-            Agents will appear here when they are actively working on features.
-            Start an agent from the Kanban board by dragging a feature to "In Progress".
+            Agents will appear here when they are actively working on features. Start an agent from
+            the Kanban board by dragging a feature to "In Progress".
           </p>
         </div>
       ) : (
@@ -163,9 +158,7 @@ export function RunningAgentsView() {
                   {/* Agent info */}
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium truncate">
-                        {agent.featureId}
-                      </span>
+                      <span className="font-medium truncate">{agent.featureId}</span>
                       {agent.isAutoMode && (
                         <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-brand-500/10 text-brand-500 border border-brand-500/30">
                           AUTO

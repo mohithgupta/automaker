@@ -6,9 +6,9 @@
  * new providers (Cursor, OpenCode, etc.) trivial - just add one line.
  */
 
-import { BaseProvider } from "./base-provider.js";
-import { ClaudeProvider } from "./claude-provider.js";
-import type { InstallationStatus } from "./types.js";
+import { BaseProvider } from './base-provider.js';
+import { ClaudeProvider } from './claude-provider.js';
+import type { InstallationStatus } from './types.js';
 
 export class ProviderFactory {
   /**
@@ -21,10 +21,7 @@ export class ProviderFactory {
     const lowerModel = modelId.toLowerCase();
 
     // Claude models (claude-*, opus, sonnet, haiku)
-    if (
-      lowerModel.startsWith("claude-") ||
-      ["haiku", "sonnet", "opus"].includes(lowerModel)
-    ) {
+    if (lowerModel.startsWith('claude-') || ['haiku', 'sonnet', 'opus'].includes(lowerModel)) {
       return new ClaudeProvider();
     }
 
@@ -37,9 +34,7 @@ export class ProviderFactory {
     // }
 
     // Default to Claude for unknown models
-    console.warn(
-      `[ProviderFactory] Unknown model prefix for "${modelId}", defaulting to Claude`
-    );
+    console.warn(`[ProviderFactory] Unknown model prefix for "${modelId}", defaulting to Claude`);
     return new ClaudeProvider();
   }
 
@@ -58,9 +53,7 @@ export class ProviderFactory {
    *
    * @returns Map of provider name to installation status
    */
-  static async checkAllProviders(): Promise<
-    Record<string, InstallationStatus>
-  > {
+  static async checkAllProviders(): Promise<Record<string, InstallationStatus>> {
     const providers = this.getAllProviders();
     const statuses: Record<string, InstallationStatus> = {};
 
@@ -83,8 +76,8 @@ export class ProviderFactory {
     const lowerName = name.toLowerCase();
 
     switch (lowerName) {
-      case "claude":
-      case "anthropic":
+      case 'claude':
+      case 'anthropic':
         return new ClaudeProvider();
 
       // Future providers:

@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import type { FeatureSuggestion } from "@/lib/electron";
+import { useState, useCallback } from 'react';
+import type { FeatureSuggestion } from '@/lib/electron';
 
 export function useSuggestionsState() {
   const [showSuggestionsDialog, setShowSuggestionsDialog] = useState(false);

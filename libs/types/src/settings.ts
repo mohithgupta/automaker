@@ -14,42 +14,80 @@ export type { AgentModel };
 /**
  * ThemeMode - Available color themes for the UI
  *
- * Includes system theme and multiple color schemes:
+ * Includes system theme and multiple color schemes organized by dark/light:
  * - System: Respects OS dark/light mode preference
- * - Light/Dark: Basic light and dark variants
- * - Color Schemes: Retro, Dracula, Nord, Monokai, Tokyo Night, Solarized, Gruvbox,
- *   Catppuccin, OneDark, Synthwave, Red, Cream, Sunset, Gray
+ * - Dark themes (16): dark, retro, dracula, nord, monokai, tokyonight, solarized,
+ *   gruvbox, catppuccin, onedark, synthwave, red, sunset, gray, forest, ocean
+ * - Light themes (16): light, cream, solarizedlight, github, paper, rose, mint,
+ *   lavender, sand, sky, peach, snow, sepia, gruvboxlight, nordlight, blossom
  */
 export type ThemeMode =
-  | "light"
-  | "dark"
-  | "system"
-  | "retro"
-  | "dracula"
-  | "nord"
-  | "monokai"
-  | "tokyonight"
-  | "solarized"
-  | "gruvbox"
-  | "catppuccin"
-  | "onedark"
-  | "synthwave"
-  | "red"
-  | "cream"
-  | "sunset"
-  | "gray";
+  | 'system'
+  // Dark themes (16)
+  | 'dark'
+  | 'retro'
+  | 'dracula'
+  | 'nord'
+  | 'monokai'
+  | 'tokyonight'
+  | 'solarized'
+  | 'gruvbox'
+  | 'catppuccin'
+  | 'onedark'
+  | 'synthwave'
+  | 'red'
+  | 'sunset'
+  | 'gray'
+  | 'forest'
+  | 'ocean'
+  // Light themes (16)
+  | 'light'
+  | 'cream'
+  | 'solarizedlight'
+  | 'github'
+  | 'paper'
+  | 'rose'
+  | 'mint'
+  | 'lavender'
+  | 'sand'
+  | 'sky'
+  | 'peach'
+  | 'snow'
+  | 'sepia'
+  | 'gruvboxlight'
+  | 'nordlight'
+  | 'blossom';
 
 /** KanbanCardDetailLevel - Controls how much information is displayed on kanban cards */
-export type KanbanCardDetailLevel = "minimal" | "standard" | "detailed";
+export type KanbanCardDetailLevel = 'minimal' | 'standard' | 'detailed';
 
 /** PlanningMode - Planning levels for feature generation workflows */
-export type PlanningMode = "skip" | "lite" | "spec" | "full";
+export type PlanningMode = 'skip' | 'lite' | 'spec' | 'full';
 
 /** ThinkingLevel - Extended thinking levels for Claude models (reasoning intensity) */
-export type ThinkingLevel = "none" | "low" | "medium" | "high" | "ultrathink";
+export type ThinkingLevel = 'none' | 'low' | 'medium' | 'high' | 'ultrathink';
 
 /** ModelProvider - AI model provider for credentials and API key management */
-export type ModelProvider = "claude";
+export type ModelProvider = 'claude';
+
+/**
+ * WindowBounds - Electron window position and size for persistence
+ *
+ * Stored in global settings to restore window state across sessions.
+ * Includes position (x, y), dimensions (width, height), and maximized state.
+ */
+export interface WindowBounds {
+  /** Window X position on screen */
+  x: number;
+  /** Window Y position on screen */
+  y: number;
+  /** Window width in pixels */
+  width: number;
+  /** Window height in pixels */
+  height: number;
+  /** Whether window was maximized when closed */
+  isMaximized: boolean;
+}
 
 /**
  * KeyboardShortcuts - User-configurable keyboard bindings for common actions
@@ -253,6 +291,10 @@ export interface GlobalSettings {
   // Session Tracking
   /** Maps project path -> last selected session ID in that project */
   lastSelectedSessionByProject: Record<string, string>;
+
+  // Window State (Electron only)
+  /** Persisted window bounds for restoring position/size across sessions */
+  windowBounds?: WindowBounds;
 }
 
 /**
@@ -356,45 +398,45 @@ export interface ProjectSettings {
 
 /** Default keyboard shortcut bindings */
 export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcuts = {
-  board: "K",
-  agent: "A",
-  spec: "D",
-  context: "C",
-  settings: "S",
-  profiles: "M",
-  terminal: "T",
-  toggleSidebar: "`",
-  addFeature: "N",
-  addContextFile: "N",
-  startNext: "G",
-  newSession: "N",
-  openProject: "O",
-  projectPicker: "P",
-  cyclePrevProject: "Q",
-  cycleNextProject: "E",
-  addProfile: "N",
-  splitTerminalRight: "Alt+D",
-  splitTerminalDown: "Alt+S",
-  closeTerminal: "Alt+W",
+  board: 'K',
+  agent: 'A',
+  spec: 'D',
+  context: 'C',
+  settings: 'S',
+  profiles: 'M',
+  terminal: 'T',
+  toggleSidebar: '`',
+  addFeature: 'N',
+  addContextFile: 'N',
+  startNext: 'G',
+  newSession: 'N',
+  openProject: 'O',
+  projectPicker: 'P',
+  cyclePrevProject: 'Q',
+  cycleNextProject: 'E',
+  addProfile: 'N',
+  splitTerminalRight: 'Alt+D',
+  splitTerminalDown: 'Alt+S',
+  closeTerminal: 'Alt+W',
 };
 
 /** Default global settings used when no settings file exists */
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   version: 1,
-  theme: "dark",
+  theme: 'dark',
   sidebarOpen: true,
   chatHistoryOpen: false,
-  kanbanCardDetailLevel: "standard",
+  kanbanCardDetailLevel: 'standard',
   maxConcurrency: 3,
   defaultSkipTests: true,
   enableDependencyBlocking: true,
   useWorktrees: false,
   showProfilesOnly: false,
-  defaultPlanningMode: "skip",
+  defaultPlanningMode: 'skip',
   defaultRequirePlanApproval: false,
   defaultAIProfileId: null,
   muteDoneSound: false,
-  enhancementModel: "sonnet",
+  enhancementModel: 'sonnet',
   keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
   aiProfiles: [],
   projects: [],
@@ -411,9 +453,9 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
 export const DEFAULT_CREDENTIALS: Credentials = {
   version: 1,
   apiKeys: {
-    anthropic: "",
-    google: "",
-    openai: "",
+    anthropic: '',
+    google: '',
+    openai: '',
   },
 };
 

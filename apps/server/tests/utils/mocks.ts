@@ -3,10 +3,10 @@
  * Provides reusable mocks for common dependencies
  */
 
-import { vi } from "vitest";
-import type { ChildProcess } from "child_process";
-import { EventEmitter } from "events";
-import type { Readable } from "stream";
+import { vi } from 'vitest';
+import type { ChildProcess } from 'child_process';
+import { EventEmitter } from 'events';
+import type { Readable } from 'stream';
 
 /**
  * Mock child_process.spawn for subprocess tests
@@ -31,19 +31,19 @@ export function createMockChildProcess(options: {
   process.nextTick(() => {
     // Emit stdout lines
     for (const line of stdout) {
-      mockProcess.stdout.emit("data", Buffer.from(line + "\n"));
+      mockProcess.stdout.emit('data', Buffer.from(line + '\n'));
     }
 
     // Emit stderr lines
     for (const line of stderr) {
-      mockProcess.stderr.emit("data", Buffer.from(line + "\n"));
+      mockProcess.stderr.emit('data', Buffer.from(line + '\n'));
     }
 
     // Emit exit or error
     if (shouldError) {
-      mockProcess.emit("error", new Error("Process error"));
+      mockProcess.emit('error', new Error('Process error'));
     } else {
-      mockProcess.emit("exit", exitCode);
+      mockProcess.emit('exit', exitCode);
     }
   });
 

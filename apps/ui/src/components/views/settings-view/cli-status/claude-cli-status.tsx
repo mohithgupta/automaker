@@ -1,12 +1,7 @@
-import { Button } from "@/components/ui/button";
-import {
-  Terminal,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { CliStatus } from "../shared/types";
+import { Button } from '@/components/ui/button';
+import { Terminal, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { CliStatus } from '../shared/types';
 
 interface CliStatusProps {
   status: CliStatus | null;
@@ -14,20 +9,16 @@ interface CliStatusProps {
   onRefresh: () => void;
 }
 
-export function ClaudeCliStatus({
-  status,
-  isChecking,
-  onRefresh,
-}: CliStatusProps) {
+export function ClaudeCliStatus({ status, isChecking, onRefresh }: CliStatusProps) {
   if (!status) return null;
 
   return (
     <div
       className={cn(
-        "rounded-2xl overflow-hidden",
-        "border border-border/50",
-        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
-        "shadow-sm shadow-black/5"
+        'rounded-2xl overflow-hidden',
+        'border border-border/50',
+        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
+        'shadow-sm shadow-black/5'
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -48,32 +39,28 @@ export function ClaudeCliStatus({
             data-testid="refresh-claude-cli"
             title="Refresh Claude CLI detection"
             className={cn(
-              "h-9 w-9 rounded-lg",
-              "hover:bg-accent/50 hover:scale-105",
-              "transition-all duration-200"
+              'h-9 w-9 rounded-lg',
+              'hover:bg-accent/50 hover:scale-105',
+              'transition-all duration-200'
             )}
           >
-            <RefreshCw
-              className={cn("w-4 h-4", isChecking && "animate-spin")}
-            />
+            <RefreshCw className={cn('w-4 h-4', isChecking && 'animate-spin')} />
           </Button>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Claude Code CLI provides better performance for long-running tasks,
-          especially with ultrathink.
+          Claude Code CLI provides better performance for long-running tasks, especially with
+          ultrathink.
         </p>
       </div>
       <div className="p-6 space-y-4">
-        {status.success && status.status === "installed" ? (
+        {status.success && status.status === 'installed' ? (
           <div className="space-y-3">
             <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 shrink-0">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-emerald-400">
-                  Claude Code CLI Installed
-                </p>
+                <p className="text-sm font-medium text-emerald-400">Claude Code CLI Installed</p>
                 <div className="text-xs text-emerald-400/70 mt-1.5 space-y-0.5">
                   {status.method && (
                     <p>
@@ -94,9 +81,7 @@ export function ClaudeCliStatus({
               </div>
             </div>
             {status.recommendation && (
-              <p className="text-xs text-muted-foreground/70 ml-1">
-                {status.recommendation}
-              </p>
+              <p className="text-xs text-muted-foreground/70 ml-1">{status.recommendation}</p>
             )}
           </div>
         ) : (
@@ -106,24 +91,22 @@ export function ClaudeCliStatus({
                 <AlertCircle className="w-5 h-5 text-amber-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">
-                  Claude Code CLI Not Detected
-                </p>
+                <p className="text-sm font-medium text-amber-400">Claude Code CLI Not Detected</p>
                 <p className="text-xs text-amber-400/70 mt-1">
                   {status.recommendation ||
-                    "Consider installing Claude Code CLI for optimal performance with ultrathink."}
+                    'Consider installing Claude Code CLI for optimal performance with ultrathink.'}
                 </p>
               </div>
             </div>
             {status.installCommands && (
               <div className="space-y-3">
-                <p className="text-xs font-medium text-foreground/80">
-                  Installation Commands:
-                </p>
+                <p className="text-xs font-medium text-foreground/80">Installation Commands:</p>
                 <div className="space-y-2">
                   {status.installCommands.npm && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
-                      <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">npm</p>
+                      <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
+                        npm
+                      </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.npm}
                       </code>
@@ -131,7 +114,9 @@ export function ClaudeCliStatus({
                   )}
                   {status.installCommands.macos && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
-                      <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">macOS/Linux</p>
+                      <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
+                        macOS/Linux
+                      </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.macos}
                       </code>
@@ -139,7 +124,9 @@ export function ClaudeCliStatus({
                   )}
                   {status.installCommands.windows && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">
-                      <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">Windows (PowerShell)</p>
+                      <p className="text-[10px] text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
+                        Windows (PowerShell)
+                      </p>
                       <code className="text-xs text-foreground/80 font-mono break-all">
                         {status.installCommands.windows}
                       </code>

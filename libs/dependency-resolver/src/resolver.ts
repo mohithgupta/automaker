@@ -8,10 +8,10 @@
 import type { Feature } from '@automaker/types';
 
 export interface DependencyResolutionResult {
-  orderedFeatures: Feature[];       // Features in dependency-aware order
+  orderedFeatures: Feature[]; // Features in dependency-aware order
   circularDependencies: string[][]; // Groups of IDs forming cycles
   missingDependencies: Map<string, string[]>; // featureId -> missing dep IDs
-  blockedFeatures: Map<string, string[]>;     // featureId -> blocking dep IDs (incomplete dependencies)
+  blockedFeatures: Map<string, string[]>; // featureId -> blocking dep IDs (incomplete dependencies)
 }
 
 /**
@@ -27,7 +27,7 @@ export interface DependencyResolutionResult {
  * @returns Resolution result with ordered features and dependency metadata
  */
 export function resolveDependencies(features: Feature[]): DependencyResolutionResult {
-  const featureMap = new Map<string, Feature>(features.map(f => [f.id, f]));
+  const featureMap = new Map<string, Feature>(features.map((f) => [f.id, f]));
   const inDegree = new Map<string, number>();
   const adjacencyList = new Map<string, string[]>(); // dependencyId -> [dependentIds]
   const missingDependencies = new Map<string, string[]>();
@@ -71,8 +71,7 @@ export function resolveDependencies(features: Feature[]): DependencyResolutionRe
   const orderedFeatures: Feature[] = [];
 
   // Helper to sort features by priority (lower number = higher priority)
-  const sortByPriority = (a: Feature, b: Feature) =>
-    (a.priority ?? 2) - (b.priority ?? 2);
+  const sortByPriority = (a: Feature, b: Feature) => (a.priority ?? 2) - (b.priority ?? 2);
 
   // Start with features that have no dependencies (in-degree 0)
   for (const [id, degree] of inDegree) {
@@ -109,11 +108,11 @@ export function resolveDependencies(features: Feature[]): DependencyResolutionRe
 
   // Detect circular dependencies (features not in output = part of cycle)
   const circularDependencies: string[][] = [];
-  const processedIds = new Set(orderedFeatures.map(f => f.id));
+  const processedIds = new Set(orderedFeatures.map((f) => f.id));
 
   if (orderedFeatures.length < features.length) {
     // Find cycles using DFS
-    const remaining = features.filter(f => !processedIds.has(f.id));
+    const remaining = features.filter((f) => !processedIds.has(f.id));
     const cycles = detectCycles(remaining, featureMap);
     circularDependencies.push(...cycles);
 
@@ -125,7 +124,7 @@ export function resolveDependencies(features: Feature[]): DependencyResolutionRe
     orderedFeatures,
     circularDependencies,
     missingDependencies,
-    blockedFeatures
+    blockedFeatures,
   };
 }
 
@@ -136,10 +135,7 @@ export function resolveDependencies(features: Feature[]): DependencyResolutionRe
  * @param featureMap - Map of all features by ID
  * @returns Array of cycles, where each cycle is an array of feature IDs
  */
-function detectCycles(
-  features: Feature[],
-  featureMap: Map<string, Feature>
-): string[][] {
+function detectCycles(features: Feature[], featureMap: Map<string, Feature>): string[][] {
   const cycles: string[][] = [];
   const visited = new Set<string>();
   const recursionStack = new Set<string>();
@@ -185,16 +181,13 @@ function detectCycles(
  * @param allFeatures - All features in the project
  * @returns true if all dependencies are satisfied, false otherwise
  */
-export function areDependenciesSatisfied(
-  feature: Feature,
-  allFeatures: Feature[]
-): boolean {
+export function areDependenciesSatisfied(feature: Feature, allFeatures: Feature[]): boolean {
   if (!feature.dependencies || feature.dependencies.length === 0) {
     return true; // No dependencies = always ready
   }
 
   return feature.dependencies.every((depId: string) => {
-    const dep = allFeatures.find(f => f.id === depId);
+    const dep = allFeatures.find((f) => f.id === depId);
     return dep && (dep.status === 'completed' || dep.status === 'verified');
   });
 }
@@ -206,16 +199,13 @@ export function areDependenciesSatisfied(
  * @param allFeatures - All features in the project
  * @returns Array of feature IDs that are blocking this feature
  */
-export function getBlockingDependencies(
-  feature: Feature,
-  allFeatures: Feature[]
-): string[] {
+export function getBlockingDependencies(feature: Feature, allFeatures: Feature[]): string[] {
   if (!feature.dependencies || feature.dependencies.length === 0) {
     return [];
   }
 
   return feature.dependencies.filter((depId: string) => {
-    const dep = allFeatures.find(f => f.id === depId);
+    const dep = allFeatures.find((f) => f.id === depId);
     return dep && dep.status !== 'completed' && dep.status !== 'verified';
   });
 }

@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { HotkeyButton } from "@/components/ui/hotkey-button";
-import { UserCircle, Plus, RefreshCw } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { HotkeyButton } from '@/components/ui/hotkey-button';
+import { UserCircle, Plus, RefreshCw } from 'lucide-react';
 
 interface ProfilesHeaderProps {
   onResetProfiles: () => void;
@@ -22,9 +22,7 @@ export function ProfilesHeader({
               <UserCircle className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">
-                AI Profiles
-              </h1>
+              <h1 className="text-2xl font-bold text-foreground">AI Profiles</h1>
               <p className="text-sm text-muted-foreground">
                 Create and manage model configuration presets
               </p>
@@ -55,4 +53,3 @@ export function ProfilesHeader({
     </div>
   );
 }
-

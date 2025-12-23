@@ -1,7 +1,14 @@
-
-import React, { useState, useRef, useCallback } from "react";
-import { cn } from "@/lib/utils";
-import { ImageIcon, X, Upload } from "lucide-react";
+import React, { useState, useRef, useCallback } from 'react';
+import { cn } from '@/lib/utils';
+import { ImageIcon, X, Upload } from 'lucide-react';
+import {
+  fileToBase64,
+  generateImageId,
+  ACCEPTED_IMAGE_TYPES,
+  DEFAULT_MAX_FILE_SIZE,
+  DEFAULT_MAX_FILES,
+  validateImageFile,
+} from '@/lib/image-utils';
 
 export interface FeatureImage {
   id: string;
@@ -20,19 +27,10 @@ interface FeatureImageUploadProps {
   disabled?: boolean;
 }
 
-const ACCEPTED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-];
-const DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
 export function FeatureImageUpload({
   images,
   onImagesChange,
-  maxFiles = 5,
+  maxFiles = DEFAULT_MAX_FILES,
   maxFileSize = DEFAULT_MAX_FILE_SIZE,
   className,
   disabled = false,
@@ -40,21 +38,6 @@ export function FeatureImageUpload({
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          resolve(reader.result);
-        } else {
-          reject(new Error("Failed to read file as base64"));
-        }
-      };
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
-  };
 
   const processFiles = useCallback(
     async (files: FileList) => {
@@ -65,20 +48,10 @@ export function FeatureImageUpload({
       const errors: string[] = [];
 
       for (const file of Array.from(files)) {
-        // Validate file type
-        if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-          errors.push(
-            `${file.name}: Unsupported file type. Please use JPG, PNG, GIF, or WebP.`
-          );
-          continue;
-        }
-
-        // Validate file size
-        if (file.size > maxFileSize) {
-          const maxSizeMB = maxFileSize / (1024 * 1024);
-          errors.push(
-            `${file.name}: File too large. Maximum size is ${maxSizeMB}MB.`
-          );
+        // Validate file
+        const validation = validateImageFile(file, maxFileSize);
+        if (!validation.isValid) {
+          errors.push(validation.error!);
           continue;
         }
 
@@ -91,20 +64,20 @@ export function FeatureImageUpload({
         try {
           const base64 = await fileToBase64(file);
           const imageAttachment: FeatureImage = {
-            id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id: generateImageId(),
             data: base64,
             mimeType: file.type,
             filename: file.name,
             size: file.size,
           };
           newImages.push(imageAttachment);
-        } catch (error) {
+        } catch {
           errors.push(`${file.name}: Failed to process image.`);
         }
       }
 
       if (errors.length > 0) {
-        console.warn("Image upload errors:", errors);
+        console.warn('Image upload errors:', errors);
       }
 
       if (newImages.length > 0) {
@@ -157,7 +130,7 @@ export function FeatureImageUpload({
       }
       // Reset the input so the same file can be selected again
       if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+        fileInputRef.current.value = '';
       }
     },
     [processFiles]
@@ -180,22 +153,14 @@ export function FeatureImageUpload({
     onImagesChange([]);
   }, [onImagesChange]);
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
-  };
-
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn('relative', className)}>
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
-        accept={ACCEPTED_IMAGE_TYPES.join(",")}
+        accept={ACCEPTED_IMAGE_TYPES.join(',')}
         onChange={handleFileSelect}
         className="hidden"
         disabled={disabled}
@@ -209,13 +174,12 @@ export function FeatureImageUpload({
         onDragLeave={handleDragLeave}
         onClick={handleBrowseClick}
         className={cn(
-          "relative rounded-lg border-2 border-dashed transition-all duration-200 cursor-pointer",
+          'relative rounded-lg border-2 border-dashed transition-all duration-200 cursor-pointer',
           {
-            "border-blue-400 bg-blue-50 dark:bg-blue-950/20":
-              isDragOver && !disabled,
-            "border-muted-foreground/25": !isDragOver && !disabled,
-            "border-muted-foreground/10 opacity-50 cursor-not-allowed": disabled,
-            "hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/10":
+            'border-blue-400 bg-blue-50 dark:bg-blue-950/20': isDragOver && !disabled,
+            'border-muted-foreground/25': !isDragOver && !disabled,
+            'border-muted-foreground/10 opacity-50 cursor-not-allowed': disabled,
+            'hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/10':
               !disabled && !isDragOver,
           }
         )}
@@ -224,10 +188,8 @@ export function FeatureImageUpload({
         <div className="flex flex-col items-center justify-center p-4 text-center">
           <div
             className={cn(
-              "rounded-full p-2 mb-2",
-              isDragOver && !disabled
-                ? "bg-blue-100 dark:bg-blue-900/30"
-                : "bg-muted"
+              'rounded-full p-2 mb-2',
+              isDragOver && !disabled ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-muted'
             )}
           >
             {isProcessing ? (
@@ -237,13 +199,10 @@ export function FeatureImageUpload({
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            {isDragOver && !disabled
-              ? "Drop images here"
-              : "Click or drag images here"}
+            {isDragOver && !disabled ? 'Drop images here' : 'Click or drag images here'}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Up to {maxFiles} images, max{" "}
-            {Math.round(maxFileSize / (1024 * 1024))}MB each
+            Up to {maxFiles} images, max {Math.round(maxFileSize / (1024 * 1024))}MB each
           </p>
         </div>
       </div>
@@ -253,7 +212,7 @@ export function FeatureImageUpload({
         <div className="mt-3 space-y-2" data-testid="feature-image-previews">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">
-              {images.length} image{images.length > 1 ? "s" : ""} selected
+              {images.length} image{images.length > 1 ? 's' : ''} selected
             </p>
             <button
               type="button"
@@ -295,9 +254,7 @@ export function FeatureImageUpload({
                 )}
                 {/* Filename tooltip on hover */}
                 <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <p className="text-[10px] text-white truncate">
-                    {image.filename}
-                  </p>
+                  <p className="text-[10px] text-white truncate">{image.filename}</p>
                 </div>
               </div>
             ))}

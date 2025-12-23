@@ -2,10 +2,10 @@
  * POST /list-branches endpoint - List all local branches
  */
 
-import type { Request, Response } from "express";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { getErrorMessage, logWorktreeError } from "../common.js";
+import type { Request, Response } from 'express';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { getErrorMessage, logWorktreeError } from '../common.js';
 
 const execAsync = promisify(exec);
 
@@ -25,33 +25,31 @@ export function createListBranchesHandler() {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: "worktreePath required",
+          error: 'worktreePath required',
         });
         return;
       }
 
       // Get current branch
-      const { stdout: currentBranchOutput } = await execAsync(
-        "git rev-parse --abbrev-ref HEAD",
-        { cwd: worktreePath }
-      );
+      const { stdout: currentBranchOutput } = await execAsync('git rev-parse --abbrev-ref HEAD', {
+        cwd: worktreePath,
+      });
       const currentBranch = currentBranchOutput.trim();
 
       // List all local branches
       // Use double quotes around the format string for cross-platform compatibility
       // Single quotes are preserved literally on Windows; double quotes work on both
-      const { stdout: branchesOutput } = await execAsync(
-        'git branch --format="%(refname:short)"',
-        { cwd: worktreePath }
-      );
+      const { stdout: branchesOutput } = await execAsync('git branch --format="%(refname:short)"', {
+        cwd: worktreePath,
+      });
 
       const branches: BranchInfo[] = branchesOutput
         .trim()
-        .split("\n")
+        .split('\n')
         .filter((b) => b.trim())
         .map((name) => {
           // Remove any surrounding quotes (Windows git may preserve them)
-          const cleanName = name.trim().replace(/^['"]|['"]$/g, "");
+          const cleanName = name.trim().replace(/^['"]|['"]$/g, '');
           return {
             name: cleanName,
             isCurrent: cleanName === currentBranch,
@@ -93,7 +91,7 @@ export function createListBranchesHandler() {
       });
     } catch (error) {
       const worktreePath = req.body?.worktreePath;
-      logWorktreeError(error, "List branches failed", worktreePath);
+      logWorktreeError(error, 'List branches failed', worktreePath);
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -17,10 +17,7 @@ import type { ErrorType, ErrorInfo } from '@automaker/types';
  * @returns True if the error is an abort error
  */
 export function isAbortError(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    (error.name === "AbortError" || error.message.includes("abort"))
-  );
+  return error instanceof Error && (error.name === 'AbortError' || error.message.includes('abort'));
 }
 
 /**
@@ -32,10 +29,10 @@ export function isAbortError(error: unknown): boolean {
 export function isCancellationError(errorMessage: string): boolean {
   const lowerMessage = errorMessage.toLowerCase();
   return (
-    lowerMessage.includes("cancelled") ||
-    lowerMessage.includes("canceled") ||
-    lowerMessage.includes("stopped") ||
-    lowerMessage.includes("aborted")
+    lowerMessage.includes('cancelled') ||
+    lowerMessage.includes('canceled') ||
+    lowerMessage.includes('stopped') ||
+    lowerMessage.includes('aborted')
   );
 }
 
@@ -47,10 +44,10 @@ export function isCancellationError(errorMessage: string): boolean {
  */
 export function isAuthenticationError(errorMessage: string): boolean {
   return (
-    errorMessage.includes("Authentication failed") ||
-    errorMessage.includes("Invalid API key") ||
-    errorMessage.includes("authentication_failed") ||
-    errorMessage.includes("Fix external API key")
+    errorMessage.includes('Authentication failed') ||
+    errorMessage.includes('Invalid API key') ||
+    errorMessage.includes('authentication_failed') ||
+    errorMessage.includes('Fix external API key')
   );
 }
 
@@ -61,22 +58,22 @@ export function isAuthenticationError(errorMessage: string): boolean {
  * @returns Classified error information
  */
 export function classifyError(error: unknown): ErrorInfo {
-  const message = error instanceof Error ? error.message : String(error || "Unknown error");
+  const message = error instanceof Error ? error.message : String(error || 'Unknown error');
   const isAbort = isAbortError(error);
   const isAuth = isAuthenticationError(message);
   const isCancellation = isCancellationError(message);
 
   let type: ErrorType;
   if (isAuth) {
-    type = "authentication";
+    type = 'authentication';
   } else if (isAbort) {
-    type = "abort";
+    type = 'abort';
   } else if (isCancellation) {
-    type = "cancellation";
+    type = 'cancellation';
   } else if (error instanceof Error) {
-    type = "execution";
+    type = 'execution';
   } else {
-    type = "unknown";
+    type = 'unknown';
   }
 
   return {
@@ -99,11 +96,11 @@ export function getUserFriendlyErrorMessage(error: unknown): string {
   const info = classifyError(error);
 
   if (info.isAbort) {
-    return "Operation was cancelled";
+    return 'Operation was cancelled';
   }
 
   if (info.isAuth) {
-    return "Authentication failed. Please check your API key.";
+    return 'Authentication failed. Please check your API key.';
   }
 
   return info.message;
@@ -130,5 +127,5 @@ export function getUserFriendlyErrorMessage(error: unknown): string {
  * ```
  */
 export function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unknown error";
+  return error instanceof Error ? error.message : 'Unknown error';
 }

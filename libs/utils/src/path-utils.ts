@@ -22,7 +22,7 @@
  * ```
  */
 export function normalizePath(p: string): string {
-  return p.replace(/\\/g, "/");
+  return p.replace(/\\/g, '/');
 }
 
 /**
@@ -45,10 +45,7 @@ export function normalizePath(p: string): string {
  * pathsEqual(null, null);                       // true
  * ```
  */
-export function pathsEqual(
-  p1: string | undefined | null,
-  p2: string | undefined | null
-): boolean {
+export function pathsEqual(p1: string | undefined | null, p2: string | undefined | null): boolean {
   if (!p1 || !p2) return p1 === p2;
   return normalizePath(p1) === normalizePath(p2);
 }

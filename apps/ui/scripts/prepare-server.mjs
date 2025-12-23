@@ -27,7 +27,7 @@ const LOCAL_PACKAGES = [
   '@automaker/platform',
   '@automaker/model-resolver',
   '@automaker/dependency-resolver',
-  '@automaker/git-utils'
+  '@automaker/git-utils',
 ];
 
 console.log('🔧 Preparing server for Electron bundling...\n');
@@ -95,13 +95,10 @@ const bundlePkg = {
   version: serverPkg.version,
   type: 'module',
   main: 'dist/index.js',
-  dependencies
+  dependencies,
 };
 
-writeFileSync(
-  join(BUNDLE_DIR, 'package.json'),
-  JSON.stringify(bundlePkg, null, 2)
-);
+writeFileSync(join(BUNDLE_DIR, 'package.json'), JSON.stringify(bundlePkg, null, 2));
 
 // Step 6: Install production dependencies
 console.log('📥 Installing server production dependencies...');
@@ -111,8 +108,8 @@ execSync('npm install --omit=dev', {
   env: {
     ...process.env,
     // Prevent npm from using workspace resolution
-    npm_config_workspace: ''
-  }
+    npm_config_workspace: '',
+  },
 });
 
 // Step 7: Rebuild native modules for current architecture
@@ -121,11 +118,13 @@ console.log('🔨 Rebuilding native modules for current architecture...');
 try {
   execSync('npm rebuild', {
     cwd: BUNDLE_DIR,
-    stdio: 'inherit'
+    stdio: 'inherit',
   });
   console.log('✅ Native modules rebuilt successfully');
 } catch (error) {
-  console.warn('⚠️  Warning: Failed to rebuild native modules. Terminal functionality may not work.');
+  console.warn(
+    '⚠️  Warning: Failed to rebuild native modules. Terminal functionality may not work.'
+  );
   console.warn('   Error:', error.message);
 }
 

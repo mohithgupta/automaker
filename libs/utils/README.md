@@ -15,6 +15,7 @@ npm install @automaker/utils
 ## Exports
 
 ### Logger
+
 Structured logging with context.
 
 ```typescript
@@ -27,6 +28,7 @@ logger.debug('Debug information', { data });
 ```
 
 ### Error Handler
+
 Error classification and user-friendly messages.
 
 ```typescript
@@ -35,7 +37,7 @@ import {
   isCancellationError,
   isAuthenticationError,
   classifyError,
-  getUserFriendlyErrorMessage
+  getUserFriendlyErrorMessage,
 } from '@automaker/utils';
 
 try {
@@ -51,6 +53,7 @@ try {
 ```
 
 ### Conversation Utils
+
 Message formatting and conversion.
 
 ```typescript
@@ -58,7 +61,7 @@ import {
   extractTextFromContent,
   normalizeContentBlocks,
   formatHistoryAsText,
-  convertHistoryToMessages
+  convertHistoryToMessages,
 } from '@automaker/utils';
 
 const text = extractTextFromContent(contentBlocks);
@@ -68,6 +71,7 @@ const converted = convertHistoryToMessages(history);
 ```
 
 ### Image Handler
+
 Image processing for Claude prompts.
 
 ```typescript
@@ -75,7 +79,7 @@ import {
   getMimeTypeForImage,
   readImageAsBase64,
   convertImagesToContentBlocks,
-  formatImagePathsForPrompt
+  formatImagePathsForPrompt,
 } from '@automaker/utils';
 
 const mimeType = getMimeTypeForImage('screenshot.png');
@@ -85,6 +89,7 @@ const formatted = formatImagePathsForPrompt(imagePaths);
 ```
 
 ### Prompt Builder
+
 Build prompts with images for Claude.
 
 ```typescript
@@ -93,7 +98,7 @@ import { buildPromptWithImages } from '@automaker/utils';
 const result = await buildPromptWithImages({
   basePrompt: 'Analyze this screenshot',
   imagePaths: ['/path/to/screenshot.png'],
-  basePath: '/project/path'
+  basePath: '/project/path',
 });
 
 console.log(result.prompt); // Prompt with image references
@@ -101,15 +106,11 @@ console.log(result.images); // Image data for Claude
 ```
 
 ### File System Utils
+
 Common file system operations.
 
 ```typescript
-import {
-  ensureDir,
-  fileExists,
-  readJsonFile,
-  writeJsonFile
-} from '@automaker/utils';
+import { ensureDir, fileExists, readJsonFile, writeJsonFile } from '@automaker/utils';
 
 await ensureDir('/path/to/dir');
 const exists = await fileExists('/path/to/file');
@@ -131,7 +132,7 @@ async function executeWithImages(prompt: string, images: string[]) {
     const result = await buildPromptWithImages({
       basePrompt: prompt,
       imagePaths: images,
-      basePath: process.cwd()
+      basePath: process.cwd(),
     });
 
     logger.debug('Prompt built successfully', { imageCount: result.images.length });

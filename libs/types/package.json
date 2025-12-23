@@ -9,7 +9,10 @@
     "build": "tsc",
     "watch": "tsc --watch"
   },
-  "keywords": ["automaker", "types"],
+  "keywords": [
+    "automaker",
+    "types"
+  ],
   "author": "AutoMaker Team",
   "license": "SEE LICENSE IN LICENSE",
   "devDependencies": {

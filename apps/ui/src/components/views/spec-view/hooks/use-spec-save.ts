@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useAppStore } from "@/store/app-store";
-import { getElectronAPI } from "@/lib/electron";
+import { useState } from 'react';
+import { useAppStore } from '@/store/app-store';
+import { getElectronAPI } from '@/lib/electron';
 
 export function useSpecSave() {
   const { currentProject, appSpec, setAppSpec } = useAppStore();
@@ -13,13 +13,10 @@ export function useSpecSave() {
     setIsSaving(true);
     try {
       const api = getElectronAPI();
-      await api.writeFile(
-        `${currentProject.path}/.automaker/app_spec.txt`,
-        appSpec
-      );
+      await api.writeFile(`${currentProject.path}/.automaker/app_spec.txt`, appSpec);
       setHasChanges(false);
     } catch (error) {
-      console.error("Failed to save spec:", error);
+      console.error('Failed to save spec:', error);
     } finally {
       setIsSaving(false);
     }

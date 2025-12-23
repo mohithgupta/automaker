@@ -15,6 +15,7 @@ npm install @automaker/git-utils
 ## Exports
 
 ### Repository Detection
+
 Check if a path is a git repository.
 
 ```typescript
@@ -27,6 +28,7 @@ if (isRepo) {
 ```
 
 ### Status Parsing
+
 Parse git status output into structured data.
 
 ```typescript
@@ -36,7 +38,7 @@ import type { FileStatus } from '@automaker/git-utils';
 const statusOutput = await execAsync('git status --porcelain');
 const files: FileStatus[] = parseGitStatus(statusOutput.stdout);
 
-files.forEach(file => {
+files.forEach((file) => {
   console.log(`${file.statusText}: ${file.path}`);
   // Example: "Modified: src/index.ts"
   // Example: "Untracked: new-file.ts"
@@ -44,58 +46,56 @@ files.forEach(file => {
 ```
 
 ### Diff Generation
+
 Generate diffs including untracked files.
 
 ```typescript
 import {
   generateSyntheticDiffForNewFile,
   appendUntrackedFileDiffs,
-  getGitRepositoryDiffs
+  getGitRepositoryDiffs,
 } from '@automaker/git-utils';
 
 // Generate diff for single untracked file
-const diff = await generateSyntheticDiffForNewFile(
-  '/project/path',
-  'src/new-file.ts'
-);
+const diff = await generateSyntheticDiffForNewFile('/project/path', 'src/new-file.ts');
 
 // Get complete repository diffs (tracked + untracked)
 const result = await getGitRepositoryDiffs('/project/path');
-console.log(result.diff);        // Combined diff string
-console.log(result.files);       // Array of FileStatus
-console.log(result.hasChanges);  // Boolean
+console.log(result.diff); // Combined diff string
+console.log(result.files); // Array of FileStatus
+console.log(result.hasChanges); // Boolean
 ```
 
 ### Non-Git Directory Support
+
 Handle non-git directories by treating all files as new.
 
 ```typescript
-import {
-  listAllFilesInDirectory,
-  generateDiffsForNonGitDirectory
-} from '@automaker/git-utils';
+import { listAllFilesInDirectory, generateDiffsForNonGitDirectory } from '@automaker/git-utils';
 
 // List all files (excluding build artifacts)
 const files = await listAllFilesInDirectory('/project/path');
 
 // Generate diffs for non-git directory
 const result = await generateDiffsForNonGitDirectory('/project/path');
-console.log(result.diff);   // Synthetic diffs for all files
-console.log(result.files);  // All files as "New" status
+console.log(result.diff); // Synthetic diffs for all files
+console.log(result.files); // All files as "New" status
 ```
 
 ## Types
 
 ### FileStatus
+
 ```typescript
 interface FileStatus {
-  status: string;      // Git status code (M/A/D/R/C/U/?/!)
-  path: string;        // File path relative to repo root
-  statusText: string;  // Human-readable status
+  status: string; // Git status code (M/A/D/R/C/U/?/!)
+  path: string; // File path relative to repo root
+  statusText: string; // Human-readable status
 }
 ```
 
 ### Status Codes
+
 - `M` - Modified
 - `A` - Added
 - `D` - Deleted
@@ -107,6 +107,7 @@ interface FileStatus {
 - ` ` - Unmodified
 
 ### Status Text Examples
+
 - `"Modified"` - File has changes
 - `"Added"` - New file in staging
 - `"Deleted"` - File removed
@@ -117,11 +118,7 @@ interface FileStatus {
 ## Usage Example
 
 ```typescript
-import {
-  isGitRepo,
-  getGitRepositoryDiffs,
-  parseGitStatus
-} from '@automaker/git-utils';
+import { isGitRepo, getGitRepositoryDiffs, parseGitStatus } from '@automaker/git-utils';
 
 async function getProjectChanges(projectPath: string) {
   const isRepo = await isGitRepo(projectPath);
@@ -140,15 +137,18 @@ async function getProjectChanges(projectPath: string) {
   console.log(`Found ${result.files.length} changed files:\n`);
 
   // Group by status
-  const byStatus = result.files.reduce((acc, file) => {
-    acc[file.statusText] = acc[file.statusText] || [];
-    acc[file.statusText].push(file.path);
-    return acc;
-  }, {} as Record<string, string[]>);
+  const byStatus = result.files.reduce(
+    (acc, file) => {
+      acc[file.statusText] = acc[file.statusText] || [];
+      acc[file.statusText].push(file.path);
+      return acc;
+    },
+    {} as Record<string, string[]>
+  );
 
   Object.entries(byStatus).forEach(([status, paths]) => {
     console.log(`${status}:`);
-    paths.forEach(path => console.log(`  - ${path}`));
+    paths.forEach((path) => console.log(`  - ${path}`));
   });
 
   return result.diff;
@@ -158,9 +158,11 @@ async function getProjectChanges(projectPath: string) {
 ## Features
 
 ### Binary File Detection
+
 Automatically detects binary files by extension and generates appropriate diff markers.
 
 **Supported binary extensions:**
+
 - Images: `.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, etc.
 - Documents: `.pdf`, `.doc`, `.docx`, etc.
 - Archives: `.zip`, `.tar`, `.gz`, etc.
@@ -168,10 +170,13 @@ Automatically detects binary files by extension and generates appropriate diff m
 - Fonts: `.ttf`, `.otf`, `.woff`, etc.
 
 ### Large File Handling
+
 Files larger than 1MB show size information instead of full content.
 
 ### Synthetic Diff Format
+
 Generates unified diff format for untracked files:
+
 ```diff
 diff --git a/new-file.ts b/new-file.ts
 new file mode 100644
@@ -185,7 +190,9 @@ index 0000000..0000000
 ```
 
 ### Directory Filtering
+
 When scanning non-git directories, automatically excludes:
+
 - `node_modules`, `.git`, `.automaker`
 - Build outputs: `dist`, `build`, `out`, `tmp`, `.tmp`
 - Framework caches: `.next`, `.nuxt`, `.cache`, `coverage`
@@ -198,12 +205,14 @@ Git operations can fail for various reasons. This package provides graceful erro
 ### Common Error Scenarios
 
 **1. Repository Not Found**
+
 ```typescript
 const isRepo = await isGitRepo('/path/does/not/exist');
 // Returns: false (no exception thrown)
 ```
 
 **2. Not a Git Repository**
+
 ```typescript
 const result = await getGitRepositoryDiffs('/not/a/git/repo');
 // Fallback behavior: treats all files as "new"
@@ -211,6 +220,7 @@ const result = await getGitRepositoryDiffs('/not/a/git/repo');
 ```
 
 **3. Git Command Failures**
+
 ```typescript
 // Permission errors, corrupted repos, or git not installed
 try {
@@ -223,6 +233,7 @@ try {
 ```
 
 **4. File Read Errors**
+
 ```typescript
 // When generating synthetic diffs for inaccessible files
 const diff = await generateSyntheticDiffForNewFile('/path', 'locked-file.txt');
@@ -233,6 +244,7 @@ const diff = await generateSyntheticDiffForNewFile('/path', 'locked-file.txt');
 ### Best Practices
 
 1. **Check repository status first**:
+
    ```typescript
    const isRepo = await isGitRepo(path);
    if (!isRepo) {

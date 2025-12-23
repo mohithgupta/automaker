@@ -1,26 +1,23 @@
-import { Button } from "@/components/ui/button";
-import { Trash2, Folder, AlertTriangle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { Project } from "../shared/types";
+import { Button } from '@/components/ui/button';
+import { Trash2, Folder, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { Project } from '../shared/types';
 
 interface DangerZoneSectionProps {
   project: Project | null;
   onDeleteClick: () => void;
 }
 
-export function DangerZoneSection({
-  project,
-  onDeleteClick,
-}: DangerZoneSectionProps) {
+export function DangerZoneSection({ project, onDeleteClick }: DangerZoneSectionProps) {
   if (!project) return null;
 
   return (
     <div
       className={cn(
-        "rounded-2xl overflow-hidden",
-        "border border-destructive/30",
-        "bg-gradient-to-br from-destructive/5 via-card/70 to-card/80 backdrop-blur-xl",
-        "shadow-sm shadow-destructive/5"
+        'rounded-2xl overflow-hidden',
+        'border border-destructive/30',
+        'bg-gradient-to-br from-destructive/5 via-card/70 to-card/80 backdrop-blur-xl',
+        'shadow-sm shadow-destructive/5'
       )}
     >
       <div className="p-6 border-b border-destructive/20 bg-gradient-to-r from-destructive/5 via-transparent to-transparent">
@@ -41,12 +38,8 @@ export function DangerZoneSection({
               <Folder className="w-5 h-5 text-brand-500" />
             </div>
             <div className="min-w-0">
-              <p className="font-medium text-foreground truncate">
-                {project.name}
-              </p>
-              <p className="text-xs text-muted-foreground/70 truncate mt-0.5">
-                {project.path}
-              </p>
+              <p className="font-medium text-foreground truncate">{project.name}</p>
+              <p className="text-xs text-muted-foreground/70 truncate mt-0.5">{project.path}</p>
             </div>
           </div>
           <Button
@@ -54,10 +47,10 @@ export function DangerZoneSection({
             onClick={onDeleteClick}
             data-testid="delete-project-button"
             className={cn(
-              "shrink-0",
-              "shadow-md shadow-destructive/20 hover:shadow-lg hover:shadow-destructive/25",
-              "transition-all duration-200 ease-out",
-              "hover:scale-[1.02] active:scale-[0.98]"
+              'shrink-0',
+              'shadow-md shadow-destructive/20 hover:shadow-lg hover:shadow-destructive/25',
+              'transition-all duration-200 ease-out',
+              'hover:scale-[1.02] active:scale-[0.98]'
             )}
           >
             <Trash2 className="w-4 h-4 mr-2" />

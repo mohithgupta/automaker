@@ -5,7 +5,7 @@
 /**
  * Available enhancement modes for transforming task descriptions
  */
-export type EnhancementMode = "improve" | "technical" | "simplify" | "acceptance";
+export type EnhancementMode = 'improve' | 'technical' | 'simplify' | 'acceptance';
 
 /**
  * Example input/output pair for few-shot learning

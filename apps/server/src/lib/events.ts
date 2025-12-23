@@ -2,7 +2,7 @@
  * Event emitter for streaming events to WebSocket clients
  */
 
-import type { EventType, EventCallback } from "@automaker/types";
+import type { EventType, EventCallback } from '@automaker/types';
 
 // Re-export event types from shared package
 export type { EventType, EventCallback };
@@ -21,7 +21,7 @@ export function createEventEmitter(): EventEmitter {
         try {
           callback(type, payload);
         } catch (error) {
-          console.error("Error in event subscriber:", error);
+          console.error('Error in event subscriber:', error);
         }
       }
     },

@@ -2,7 +2,7 @@
  * Common utilities shared across all route modules
  */
 
-import { createLogger } from "@automaker/utils";
+import { createLogger } from '@automaker/utils';
 
 // Re-export git utilities from shared package
 export {
@@ -16,7 +16,7 @@ export {
   listAllFilesInDirectory,
   generateDiffsForNonGitDirectory,
   getGitRepositoryDiffs,
-} from "@automaker/git-utils";
+} from '@automaker/git-utils';
 
 type Logger = ReturnType<typeof createLogger>;
 
@@ -24,7 +24,7 @@ type Logger = ReturnType<typeof createLogger>;
  * Get error message from error object
  */
 export function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unknown error";
+  return error instanceof Error ? error.message : 'Unknown error';
 }
 
 /**

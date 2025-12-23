@@ -26,7 +26,7 @@ export function resolveModelString(
   }
 
   // Full Claude model string - pass through unchanged
-  if (modelKey.includes("claude-")) {
+  if (modelKey.includes('claude-')) {
     console.log(`[ModelResolver] Using full Claude model string: ${modelKey}`);
     return modelKey;
   }
@@ -34,16 +34,12 @@ export function resolveModelString(
   // Look up Claude model alias
   const resolved = CLAUDE_MODEL_MAP[modelKey];
   if (resolved) {
-    console.log(
-      `[ModelResolver] Resolved model alias: "${modelKey}" -> "${resolved}"`
-    );
+    console.log(`[ModelResolver] Resolved model alias: "${modelKey}" -> "${resolved}"`);
     return resolved;
   }
 
   // Unknown model key - use default
-  console.warn(
-    `[ModelResolver] Unknown model key "${modelKey}", using default: "${defaultModel}"`
-  );
+  console.warn(`[ModelResolver] Unknown model key "${modelKey}", using default: "${defaultModel}"`);
   return defaultModel;
 }
 

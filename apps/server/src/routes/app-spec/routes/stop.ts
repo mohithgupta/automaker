@@ -2,12 +2,8 @@
  * POST /stop endpoint - Stop generation
  */
 
-import type { Request, Response } from "express";
-import {
-  getSpecRegenerationStatus,
-  setRunningState,
-  getErrorMessage,
-} from "../common.js";
+import type { Request, Response } from 'express';
+import { getSpecRegenerationStatus, setRunningState, getErrorMessage } from '../common.js';
 
 export function createStopHandler() {
   return async (_req: Request, res: Response): Promise<void> => {

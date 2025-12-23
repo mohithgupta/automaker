@@ -2,9 +2,9 @@
  * POST /verify-feature endpoint - Verify a feature
  */
 
-import type { Request, Response } from "express";
-import type { AutoModeService } from "../../../services/auto-mode-service.js";
-import { getErrorMessage, logError } from "../common.js";
+import type { Request, Response } from 'express';
+import type { AutoModeService } from '../../../services/auto-mode-service.js';
+import { getErrorMessage, logError } from '../common.js';
 
 export function createVerifyFeatureHandler(autoModeService: AutoModeService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -15,22 +15,17 @@ export function createVerifyFeatureHandler(autoModeService: AutoModeService) {
       };
 
       if (!projectPath || !featureId) {
-        res
-          .status(400)
-          .json({
-            success: false,
-            error: "projectPath and featureId are required",
-          });
+        res.status(400).json({
+          success: false,
+          error: 'projectPath and featureId are required',
+        });
         return;
       }
 
-      const passes = await autoModeService.verifyFeature(
-        projectPath,
-        featureId
-      );
+      const passes = await autoModeService.verifyFeature(projectPath, featureId);
       res.json({ success: true, passes });
     } catch (error) {
-      logError(error, "Verify feature failed");
+      logError(error, 'Verify feature failed');
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

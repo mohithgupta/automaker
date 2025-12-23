@@ -1,12 +1,6 @@
-import { Button } from "@/components/ui/button";
-import {
-  Save,
-  Sparkles,
-  Loader2,
-  FileText,
-  AlertCircle,
-} from "lucide-react";
-import { PHASE_LABELS } from "../constants";
+import { Button } from '@/components/ui/button';
+import { Save, Sparkles, Loader2, FileText, AlertCircle } from 'lucide-react';
+import { PHASE_LABELS } from '../constants';
 
 interface SpecHeaderProps {
   projectPath: string;
@@ -42,9 +36,7 @@ export function SpecHeader({
         <FileText className="w-5 h-5 text-muted-foreground" />
         <div>
           <h1 className="text-xl font-bold">App Specification</h1>
-          <p className="text-sm text-muted-foreground">
-            {projectPath}/.automaker/app_spec.txt
-          </p>
+          <p className="text-sm text-muted-foreground">{projectPath}/.automaker/app_spec.txt</p>
         </div>
       </div>
       <div className="flex items-center gap-3">
@@ -57,10 +49,10 @@ export function SpecHeader({
             <div className="flex flex-col gap-1 min-w-0">
               <span className="text-sm font-semibold text-primary leading-tight tracking-tight">
                 {isGeneratingFeatures
-                  ? "Generating Features"
+                  ? 'Generating Features'
                   : isCreating
-                  ? "Generating Specification"
-                  : "Regenerating Specification"}
+                    ? 'Generating Specification'
+                    : 'Regenerating Specification'}
               </span>
               {currentPhase && (
                 <span className="text-xs text-muted-foreground/90 leading-tight font-medium">
@@ -96,7 +88,7 @@ export function SpecHeader({
             ) : (
               <Sparkles className="w-4 h-4 mr-2" />
             )}
-            {isRegenerating ? "Regenerating..." : "Regenerate"}
+            {isRegenerating ? 'Regenerating...' : 'Regenerate'}
           </Button>
           <Button
             size="sm"
@@ -105,7 +97,7 @@ export function SpecHeader({
             data-testid="save-spec"
           >
             <Save className="w-4 h-4 mr-2" />
-            {isSaving ? "Saving..." : hasChanges ? "Save Changes" : "Saved"}
+            {isSaving ? 'Saving...' : hasChanges ? 'Save Changes' : 'Saved'}
           </Button>
         </div>
       </div>

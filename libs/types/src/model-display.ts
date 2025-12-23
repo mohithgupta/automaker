@@ -20,7 +20,7 @@ export interface ModelOption {
   /** Optional badge text (e.g., "Speed", "Balanced", "Premium") */
   badge?: string;
   /** AI provider (currently only "claude") */
-  provider: "claude";
+  provider: 'claude';
 }
 
 /**
@@ -40,25 +40,25 @@ export interface ThinkingLevelOption {
  */
 export const CLAUDE_MODELS: ModelOption[] = [
   {
-    id: "haiku",
-    label: "Claude Haiku",
-    description: "Fast and efficient for simple tasks.",
-    badge: "Speed",
-    provider: "claude",
+    id: 'haiku',
+    label: 'Claude Haiku',
+    description: 'Fast and efficient for simple tasks.',
+    badge: 'Speed',
+    provider: 'claude',
   },
   {
-    id: "sonnet",
-    label: "Claude Sonnet",
-    description: "Balanced performance with strong reasoning.",
-    badge: "Balanced",
-    provider: "claude",
+    id: 'sonnet',
+    label: 'Claude Sonnet',
+    description: 'Balanced performance with strong reasoning.',
+    badge: 'Balanced',
+    provider: 'claude',
   },
   {
-    id: "opus",
-    label: "Claude Opus",
-    description: "Most capable model for complex work.",
-    badge: "Premium",
-    provider: "claude",
+    id: 'opus',
+    label: 'Claude Opus',
+    description: 'Most capable model for complex work.',
+    badge: 'Premium',
+    provider: 'claude',
   },
 ];
 
@@ -68,11 +68,11 @@ export const CLAUDE_MODELS: ModelOption[] = [
  * Ordered from least to most intensive reasoning.
  */
 export const THINKING_LEVELS: ThinkingLevelOption[] = [
-  { id: "none", label: "None" },
-  { id: "low", label: "Low" },
-  { id: "medium", label: "Medium" },
-  { id: "high", label: "High" },
-  { id: "ultrathink", label: "Ultrathink" },
+  { id: 'none', label: 'None' },
+  { id: 'low', label: 'Low' },
+  { id: 'medium', label: 'Medium' },
+  { id: 'high', label: 'High' },
+  { id: 'ultrathink', label: 'Ultrathink' },
 ];
 
 /**
@@ -81,11 +81,11 @@ export const THINKING_LEVELS: ThinkingLevelOption[] = [
  * Used for compact UI elements like badges or dropdowns.
  */
 export const THINKING_LEVEL_LABELS: Record<ThinkingLevel, string> = {
-  none: "None",
-  low: "Low",
-  medium: "Med",
-  high: "High",
-  ultrathink: "Ultra",
+  none: 'None',
+  low: 'Low',
+  medium: 'Med',
+  high: 'High',
+  ultrathink: 'Ultra',
 };
 
 /**
@@ -103,9 +103,9 @@ export const THINKING_LEVEL_LABELS: Record<ThinkingLevel, string> = {
  */
 export function getModelDisplayName(model: AgentModel | string): string {
   const displayNames: Record<string, string> = {
-    haiku: "Claude Haiku",
-    sonnet: "Claude Sonnet",
-    opus: "Claude Opus",
+    haiku: 'Claude Haiku',
+    sonnet: 'Claude Sonnet',
+    opus: 'Claude Opus',
   };
   return displayNames[model] || model;
 }

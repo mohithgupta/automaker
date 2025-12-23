@@ -3,12 +3,12 @@
  * POST /sessions endpoint - Create a new terminal session
  */
 
-import type { Request, Response } from "express";
-import { getTerminalService } from "../../../services/terminal-service.js";
-import { getErrorMessage, logError } from "../common.js";
-import { createLogger } from "@automaker/utils";
+import type { Request, Response } from 'express';
+import { getTerminalService } from '../../../services/terminal-service.js';
+import { getErrorMessage, logError } from '../common.js';
+import { createLogger } from '@automaker/utils';
 
-const logger = createLogger("Terminal");
+const logger = createLogger('Terminal');
 
 export function createSessionsListHandler() {
   return (_req: Request, res: Response): void => {
@@ -34,6 +34,21 @@ export function createSessionsCreateHandler() {
         shell,
       });
 
+      // Check if session creation was refused due to limit
+      if (!session) {
+        const maxSessions = terminalService.getMaxSessions();
+        const currentSessions = terminalService.getSessionCount();
+        logger.warn(`Session limit reached: ${currentSessions}/${maxSessions}`);
+        res.status(429).json({
+          success: false,
+          error: 'Maximum terminal sessions reached',
+          details: `Server limit is ${maxSessions} concurrent sessions. Please close unused terminals.`,
+          currentSessions,
+          maxSessions,
+        });
+        return;
+      }
+
       res.json({
         success: true,
         data: {
@@ -44,10 +59,10 @@ export function createSessionsCreateHandler() {
         },
       });
     } catch (error) {
-      logError(error, "Create terminal session failed");
+      logError(error, 'Create terminal session failed');
       res.status(500).json({
         success: false,
-        error: "Failed to create terminal session",
+        error: 'Failed to create terminal session',
         details: getErrorMessage(error),
       });
     }

@@ -1,5 +1,4 @@
-
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,11 +6,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { HotkeyButton } from "@/components/ui/hotkey-button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { HotkeyButton } from '@/components/ui/hotkey-button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   Loader2,
   Lightbulb,
@@ -22,10 +21,15 @@ import {
   RefreshCw,
   Shield,
   Zap,
-} from "lucide-react";
-import { getElectronAPI, FeatureSuggestion, SuggestionsEvent, SuggestionType } from "@/lib/electron";
-import { useAppStore, Feature } from "@/store/app-store";
-import { toast } from "sonner";
+} from 'lucide-react';
+import {
+  getElectronAPI,
+  FeatureSuggestion,
+  SuggestionsEvent,
+  SuggestionType,
+} from '@/lib/electron';
+import { useAppStore, Feature } from '@/store/app-store';
+import { toast } from 'sonner';
 
 interface FeatureSuggestionsDialogProps {
   open: boolean;
@@ -39,35 +43,38 @@ interface FeatureSuggestionsDialogProps {
 }
 
 // Configuration for each suggestion type
-const suggestionTypeConfig: Record<SuggestionType, {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  description: string;
-  color: string;
-}> = {
+const suggestionTypeConfig: Record<
+  SuggestionType,
+  {
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    description: string;
+    color: string;
+  }
+> = {
   features: {
-    label: "Feature Suggestions",
+    label: 'Feature Suggestions',
     icon: Lightbulb,
-    description: "Discover missing features and improvements",
-    color: "text-yellow-500",
+    description: 'Discover missing features and improvements',
+    color: 'text-yellow-500',
   },
   refactoring: {
-    label: "Refactoring Suggestions",
+    label: 'Refactoring Suggestions',
     icon: RefreshCw,
-    description: "Find code smells and refactoring opportunities",
-    color: "text-blue-500",
+    description: 'Find code smells and refactoring opportunities',
+    color: 'text-blue-500',
   },
   security: {
-    label: "Security Suggestions",
+    label: 'Security Suggestions',
     icon: Shield,
-    description: "Identify security vulnerabilities and issues",
-    color: "text-red-500",
+    description: 'Identify security vulnerabilities and issues',
+    color: 'text-red-500',
   },
   performance: {
-    label: "Performance Suggestions",
+    label: 'Performance Suggestions',
     icon: Zap,
-    description: "Discover performance bottlenecks and optimizations",
-    color: "text-green-500",
+    description: 'Discover performance bottlenecks and optimizations',
+    color: 'text-green-500',
   },
 };
 
@@ -112,23 +119,25 @@ export function FeatureSuggestionsDialog({
     if (!api?.suggestions) return;
 
     const unsubscribe = api.suggestions.onEvent((event: SuggestionsEvent) => {
-      if (event.type === "suggestions_progress") {
-        setProgress((prev) => [...prev, event.content || ""]);
-      } else if (event.type === "suggestions_tool") {
-        const toolName = event.tool || "Unknown Tool";
+      if (event.type === 'suggestions_progress') {
+        setProgress((prev) => [...prev, event.content || '']);
+      } else if (event.type === 'suggestions_tool') {
+        const toolName = event.tool || 'Unknown Tool';
         setProgress((prev) => [...prev, `Using tool: ${toolName}\n`]);
-      } else if (event.type === "suggestions_complete") {
+      } else if (event.type === 'suggestions_complete') {
         setIsGenerating(false);
         if (event.suggestions && event.suggestions.length > 0) {
           setSuggestions(event.suggestions);
           // Select all by default
           setSelectedIds(new Set(event.suggestions.map((s) => s.id)));
-          const typeLabel = currentSuggestionType ? suggestionTypeConfig[currentSuggestionType].label.toLowerCase() : "suggestions";
+          const typeLabel = currentSuggestionType
+            ? suggestionTypeConfig[currentSuggestionType].label.toLowerCase()
+            : 'suggestions';
           toast.success(`Generated ${event.suggestions.length} ${typeLabel}!`);
         } else {
-          toast.info("No suggestions generated. Try again.");
+          toast.info('No suggestions generated. Try again.');
         }
-      } else if (event.type === "suggestions_error") {
+      } else if (event.type === 'suggestions_error') {
         setIsGenerating(false);
         toast.error(`Error: ${event.error}`);
       }
@@ -140,31 +149,34 @@ export function FeatureSuggestionsDialog({
   }, [open, setSuggestions, setIsGenerating, currentSuggestionType]);
 
   // Start generating suggestions for a specific type
-  const handleGenerate = useCallback(async (suggestionType: SuggestionType) => {
-    const api = getElectronAPI();
-    if (!api?.suggestions) {
-      toast.error("Suggestions API not available");
-      return;
-    }
+  const handleGenerate = useCallback(
+    async (suggestionType: SuggestionType) => {
+      const api = getElectronAPI();
+      if (!api?.suggestions) {
+        toast.error('Suggestions API not available');
+        return;
+      }
 
-    setIsGenerating(true);
-    setProgress([]);
-    setSuggestions([]);
-    setSelectedIds(new Set());
-    setCurrentSuggestionType(suggestionType);
+      setIsGenerating(true);
+      setProgress([]);
+      setSuggestions([]);
+      setSelectedIds(new Set());
+      setCurrentSuggestionType(suggestionType);
 
-    try {
-      const result = await api.suggestions.generate(projectPath, suggestionType);
-      if (!result.success) {
-        toast.error(result.error || "Failed to start generation");
+      try {
+        const result = await api.suggestions.generate(projectPath, suggestionType);
+        if (!result.success) {
+          toast.error(result.error || 'Failed to start generation');
+          setIsGenerating(false);
+        }
+      } catch (error) {
+        console.error('Failed to generate suggestions:', error);
+        toast.error('Failed to start generation');
         setIsGenerating(false);
       }
-    } catch (error) {
-      console.error("Failed to generate suggestions:", error);
-      toast.error("Failed to start generation");
-      setIsGenerating(false);
-    }
-  }, [projectPath, setIsGenerating, setSuggestions]);
+    },
+    [projectPath, setIsGenerating, setSuggestions]
+  );
 
   // Stop generating
   const handleStop = useCallback(async () => {
@@ -174,9 +186,9 @@ export function FeatureSuggestionsDialog({
     try {
       await api.suggestions.stop();
       setIsGenerating(false);
-      toast.info("Generation stopped");
+      toast.info('Generation stopped');
     } catch (error) {
-      console.error("Failed to stop generation:", error);
+      console.error('Failed to stop generation:', error);
     }
   }, [setIsGenerating]);
 
@@ -218,7 +230,7 @@ export function FeatureSuggestionsDialog({
   // Import selected suggestions as features
   const handleImport = useCallback(async () => {
     if (selectedIds.size === 0) {
-      toast.warning("No suggestions selected");
+      toast.warning('No suggestions selected');
       return;
     }
 
@@ -226,17 +238,14 @@ export function FeatureSuggestionsDialog({
 
     try {
       const api = getElectronAPI();
-      const selectedSuggestions = suggestions.filter((s) =>
-        selectedIds.has(s.id)
-      );
+      const selectedSuggestions = suggestions.filter((s) => selectedIds.has(s.id));
 
       // Create new features from selected suggestions
       const newFeatures: Feature[] = selectedSuggestions.map((s) => ({
         id: `feature-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         category: s.category,
         description: s.description,
-        steps: s.steps,
-        status: "backlog" as const,
+        status: 'backlog' as const,
         skipTests: true, // As specified, testing mode true
         priority: s.priority, // Preserve priority from suggestion
       }));
@@ -264,8 +273,8 @@ export function FeatureSuggestionsDialog({
 
       onClose();
     } catch (error) {
-      console.error("Failed to import features:", error);
-      toast.error("Failed to import features");
+      console.error('Failed to import features:', error);
+      toast.error('Failed to import features');
     } finally {
       setIsImporting(false);
     }
@@ -315,7 +324,7 @@ export function FeatureSuggestionsDialog({
           <DialogDescription>
             {currentConfig
               ? currentConfig.description
-              : "Analyze your project to discover improvements. Choose a suggestion type below."}
+              : 'Analyze your project to discover improvements. Choose a suggestion type below.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -323,32 +332,35 @@ export function FeatureSuggestionsDialog({
           // Initial state - show suggestion type buttons
           <div className="flex-1 flex flex-col items-center justify-center py-8">
             <p className="text-muted-foreground text-center max-w-lg mb-8">
-              Our AI will analyze your project and generate actionable suggestions.
-              Choose what type of analysis you want to perform:
+              Our AI will analyze your project and generate actionable suggestions. Choose what type
+              of analysis you want to perform:
             </p>
             <div className="grid grid-cols-2 gap-4 w-full max-w-2xl">
-              {(Object.entries(suggestionTypeConfig) as [SuggestionType, typeof suggestionTypeConfig[SuggestionType]][]).map(
-                ([type, config]) => {
-                  const Icon = config.icon;
-                  return (
-                    <Button
-                      key={type}
-                      variant="outline"
-                      className="h-auto py-6 px-6 flex flex-col items-center gap-3 hover:border-primary/50 transition-colors"
-                      onClick={() => handleGenerate(type)}
-                      data-testid={`generate-${type}-btn`}
-                    >
-                      <Icon className={`w-8 h-8 ${config.color}`} />
-                      <div className="text-center">
-                        <div className="font-semibold">{config.label.replace(" Suggestions", "")}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {config.description}
-                        </div>
+              {(
+                Object.entries(suggestionTypeConfig) as [
+                  SuggestionType,
+                  (typeof suggestionTypeConfig)[SuggestionType],
+                ][]
+              ).map(([type, config]) => {
+                const Icon = config.icon;
+                return (
+                  <Button
+                    key={type}
+                    variant="outline"
+                    className="h-auto py-6 px-6 flex flex-col items-center gap-3 hover:border-primary/50 transition-colors"
+                    onClick={() => handleGenerate(type)}
+                    data-testid={`generate-${type}-btn`}
+                  >
+                    <Icon className={`w-8 h-8 ${config.color}`} />
+                    <div className="text-center">
+                      <div className="font-semibold">
+                        {config.label.replace(' Suggestions', '')}
                       </div>
-                    </Button>
-                  );
-                }
-              )}
+                      <div className="text-xs text-muted-foreground mt-1">{config.description}</div>
+                    </div>
+                  </Button>
+                );
+              })}
             </div>
           </div>
         ) : isGenerating ? (
@@ -370,7 +382,7 @@ export function FeatureSuggestionsDialog({
               className="flex-1 overflow-y-auto bg-zinc-950 rounded-lg p-4 font-mono text-xs min-h-[200px] max-h-[400px]"
             >
               <div className="whitespace-pre-wrap break-words text-zinc-300">
-                {progress.join("")}
+                {progress.join('')}
               </div>
             </div>
           </div>
@@ -383,14 +395,10 @@ export function FeatureSuggestionsDialog({
                   {suggestions.length} suggestions generated
                 </span>
                 <Button variant="ghost" size="sm" onClick={toggleSelectAll}>
-                  {selectedIds.size === suggestions.length
-                    ? "Deselect All"
-                    : "Select All"}
+                  {selectedIds.size === suggestions.length ? 'Deselect All' : 'Select All'}
                 </Button>
               </div>
-              <span className="text-sm font-medium">
-                {selectedIds.size} selected
-              </span>
+              <span className="text-sm font-medium">{selectedIds.size} selected</span>
             </div>
 
             <div
@@ -406,8 +414,8 @@ export function FeatureSuggestionsDialog({
                     key={suggestion.id}
                     className={`border rounded-lg p-3 transition-colors ${
                       isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
                     }`}
                     data-testid={`suggestion-${suggestion.id}`}
                   >
@@ -444,25 +452,9 @@ export function FeatureSuggestionsDialog({
                           {suggestion.description}
                         </Label>
 
-                        {isExpanded && (
-                          <div className="mt-3 space-y-2 text-sm">
-                            {suggestion.reasoning && (
-                              <p className="text-muted-foreground italic">
-                                {suggestion.reasoning}
-                              </p>
-                            )}
-                            {suggestion.steps.length > 0 && (
-                              <div>
-                                <p className="text-xs font-medium text-muted-foreground mb-1">
-                                  Implementation Steps:
-                                </p>
-                                <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5">
-                                  {suggestion.steps.map((step, i) => (
-                                    <li key={i}>{step}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                        {isExpanded && suggestion.reasoning && (
+                          <div className="mt-3 text-sm">
+                            <p className="text-muted-foreground italic">{suggestion.reasoning}</p>
                           </div>
                         )}
                       </div>
@@ -513,7 +505,7 @@ export function FeatureSuggestionsDialog({
                 <HotkeyButton
                   onClick={handleImport}
                   disabled={selectedIds.size === 0 || isImporting}
-                  hotkey={{ key: "Enter", cmdCtrl: true }}
+                  hotkey={{ key: 'Enter', cmdCtrl: true }}
                   hotkeyActive={open && hasSuggestions}
                 >
                   {isImporting ? (
@@ -522,7 +514,7 @@ export function FeatureSuggestionsDialog({
                     <Download className="w-4 h-4 mr-2" />
                   )}
                   Import {selectedIds.size} Feature
-                  {selectedIds.size !== 1 ? "s" : ""}
+                  {selectedIds.size !== 1 ? 's' : ''}
                 </HotkeyButton>
               </div>
             </div>

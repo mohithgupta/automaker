@@ -3,8 +3,8 @@
  * Provides type-safe wrappers around common API operations
  */
 
-import { Page, APIResponse } from "@playwright/test";
-import { API_ENDPOINTS } from "../core/constants";
+import { Page, APIResponse } from '@playwright/test';
+import { API_ENDPOINTS } from '../core/constants';
 
 // ============================================================================
 // Types

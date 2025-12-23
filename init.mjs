@@ -292,11 +292,10 @@ async function main() {
   log('Checking Playwright browsers...', 'yellow');
   try {
     const exitCode = await new Promise((resolve) => {
-      const playwright = crossSpawn(
-        'npx',
-        ['playwright', 'install', 'chromium'],
-        { stdio: 'inherit', cwd: path.join(__dirname, 'apps', 'ui') }
-      );
+      const playwright = crossSpawn('npx', ['playwright', 'install', 'chromium'], {
+        stdio: 'inherit',
+        cwd: path.join(__dirname, 'apps', 'ui'),
+      });
       playwright.on('close', (code) => resolve(code));
       playwright.on('error', () => resolve(1));
     });
@@ -304,10 +303,7 @@ async function main() {
     if (exitCode === 0) {
       log('Playwright browsers ready', 'green');
     } else {
-      log(
-        'Playwright installation failed (browser automation may not work)',
-        'yellow'
-      );
+      log('Playwright installation failed (browser automation may not work)', 'yellow');
     }
   } catch {
     log('Playwright installation skipped', 'yellow');
@@ -357,9 +353,7 @@ async function main() {
       }
 
       // Start server in background
-      const logStream = fs.createWriteStream(
-        path.join(__dirname, 'logs', 'server.log')
-      );
+      const logStream = fs.createWriteStream(path.join(__dirname, 'logs', 'server.log'));
       serverProcess = runNpm(['run', 'dev:server'], {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
@@ -392,10 +386,7 @@ async function main() {
       }
 
       log('✓ Server is ready!', 'green');
-      log(
-        `The application will be available at: http://localhost:3007`,
-        'green'
-      );
+      log(`The application will be available at: http://localhost:3007`, 'green');
       console.log('');
 
       // Start web app

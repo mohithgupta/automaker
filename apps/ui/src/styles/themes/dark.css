@@ -14,7 +14,7 @@
   /* Card and popover backgrounds */
   --card: oklch(0.14 0 0); /* slightly lighter than background for contrast */
   --card-foreground: oklch(1 0 0);
-  --popover: oklch(0.10 0 0); /* slightly lighter than background */
+  --popover: oklch(0.1 0 0); /* slightly lighter than background */
   --popover-foreground: oklch(1 0 0);
 
   /* Brand colors - purple/violet theme */
@@ -93,35 +93,35 @@
 
 /* Theme-specific overrides */
 
-  .dark .content-bg {
-    background: linear-gradient(135deg, oklch(0.04 0 0), oklch(0.08 0 0), oklch(0.04 0 0));
-  }
+.dark .content-bg {
+  background: linear-gradient(135deg, oklch(0.04 0 0), oklch(0.08 0 0), oklch(0.04 0 0));
+}
 
 .dark .animated-outline-gradient {
-    background: conic-gradient(from 90deg at 50% 50%, #a855f7 0%, #3b82f6 50%, #a855f7 100%);
+  background: conic-gradient(from 90deg at 50% 50%, #a855f7 0%, #3b82f6 50%, #a855f7 100%);
 }
 
 .dark .animated-outline-inner {
-    background: oklch(0.15 0 0) !important;
-    color: #c084fc !important;
+  background: oklch(0.15 0 0) !important;
+  color: #c084fc !important;
 }
 
-.dark [data-slot="button"][class*="animated-outline"]:hover .animated-outline-inner {
-    background: oklch(0.2 0.02 270) !important;
-    color: #e9d5ff !important;
+.dark [data-slot='button'][class*='animated-outline']:hover .animated-outline-inner {
+  background: oklch(0.2 0.02 270) !important;
+  color: #e9d5ff !important;
 }
 
 .dark .slider-track {
-    background: oklch(0.2 0 0);
+  background: oklch(0.2 0 0);
 }
 
 .dark .slider-range {
-    background: linear-gradient(to right, #a855f7, #3b82f6);
+  background: linear-gradient(to right, #a855f7, #3b82f6);
 }
 
 .dark .slider-thumb {
-    background: oklch(0.25 0 0);
-    border-color: oklch(0.4 0 0);
+  background: oklch(0.25 0 0);
+  border-color: oklch(0.4 0 0);
 }
 
 .dark .xml-highlight {

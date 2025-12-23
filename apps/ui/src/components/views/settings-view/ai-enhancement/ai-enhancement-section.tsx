@@ -1,8 +1,8 @@
-import { Label } from "@/components/ui/label";
-import { Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppStore } from "@/store/app-store";
-import { CLAUDE_MODELS } from "@/components/views/board-view/shared/model-constants";
+import { Label } from '@/components/ui/label';
+import { Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useAppStore } from '@/store/app-store';
+import { CLAUDE_MODELS } from '@/components/views/board-view/shared/model-constants';
 
 export function AIEnhancementSection() {
   const { enhancementModel, setEnhancementModel } = useAppStore();
@@ -10,10 +10,10 @@ export function AIEnhancementSection() {
   return (
     <div
       className={cn(
-        "rounded-2xl overflow-hidden",
-        "border border-border/50",
-        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
-        "shadow-sm shadow-black/5"
+        'rounded-2xl overflow-hidden',
+        'border border-border/50',
+        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
+        'shadow-sm shadow-black/5'
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -29,9 +29,7 @@ export function AIEnhancementSection() {
       </div>
       <div className="p-6 space-y-4">
         <div className="space-y-4">
-          <Label className="text-foreground font-medium">
-            Enhancement Model
-          </Label>
+          <Label className="text-foreground font-medium">Enhancement Model</Label>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {CLAUDE_MODELS.map(({ id, label, description, badge }) => {
               const isActive = enhancementModel === id;
@@ -40,46 +38,48 @@ export function AIEnhancementSection() {
                   key={id}
                   onClick={() => setEnhancementModel(id)}
                   className={cn(
-                    "group flex flex-col items-start gap-2 px-4 py-4 rounded-xl text-left",
-                    "transition-all duration-200 ease-out",
+                    'group flex flex-col items-start gap-2 px-4 py-4 rounded-xl text-left',
+                    'transition-all duration-200 ease-out',
                     isActive
                       ? [
-                          "bg-gradient-to-br from-brand-500/15 to-brand-600/10",
-                          "border-2 border-brand-500/40",
-                          "text-foreground",
-                          "shadow-md shadow-brand-500/10",
+                          'bg-gradient-to-br from-brand-500/15 to-brand-600/10',
+                          'border-2 border-brand-500/40',
+                          'text-foreground',
+                          'shadow-md shadow-brand-500/10',
                         ]
                       : [
-                          "bg-accent/30 hover:bg-accent/50",
-                          "border border-border/50 hover:border-border",
-                          "text-muted-foreground hover:text-foreground",
-                          "hover:shadow-sm",
+                          'bg-accent/30 hover:bg-accent/50',
+                          'border border-border/50 hover:border-border',
+                          'text-muted-foreground hover:text-foreground',
+                          'hover:shadow-sm',
                         ],
-                    "hover:scale-[1.02] active:scale-[0.98]"
+                    'hover:scale-[1.02] active:scale-[0.98]'
                   )}
                   data-testid={`enhancement-model-${id}`}
                 >
                   <div className="flex items-center gap-2 w-full">
-                    <span className={cn(
-                      "font-medium text-sm",
-                      isActive ? "text-foreground" : "group-hover:text-foreground"
-                    )}>
+                    <span
+                      className={cn(
+                        'font-medium text-sm',
+                        isActive ? 'text-foreground' : 'group-hover:text-foreground'
+                      )}
+                    >
                       {label}
                     </span>
                     {badge && (
-                      <span className={cn(
-                        "ml-auto text-xs px-2 py-0.5 rounded-full",
-                        isActive
-                          ? "bg-brand-500/20 text-brand-500"
-                          : "bg-accent text-muted-foreground"
-                      )}>
+                      <span
+                        className={cn(
+                          'ml-auto text-xs px-2 py-0.5 rounded-full',
+                          isActive
+                            ? 'bg-brand-500/20 text-brand-500'
+                            : 'bg-accent text-muted-foreground'
+                        )}
+                      >
                         {badge}
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground/80">
-                    {description}
-                  </span>
+                  <span className="text-xs text-muted-foreground/80">{description}</span>
                 </button>
               );
             })}

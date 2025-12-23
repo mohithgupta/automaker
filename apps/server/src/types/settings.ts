@@ -22,7 +22,7 @@ export type {
   BoardBackgroundSettings,
   WorktreeInfo,
   ProjectSettings,
-} from "@automaker/types";
+} from '@automaker/types';
 
 export {
   DEFAULT_KEYBOARD_SHORTCUTS,
@@ -32,4 +32,4 @@ export {
   SETTINGS_VERSION,
   CREDENTIALS_VERSION,
   PROJECT_SETTINGS_VERSION,
-} from "@automaker/types";
+} from '@automaker/types';

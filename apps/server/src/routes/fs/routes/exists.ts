@@ -2,11 +2,10 @@
  * POST /exists endpoint - Check if file/directory exists
  */
 
-import type { Request, Response } from "express";
-import fs from "fs/promises";
-import path from "path";
-import { isPathAllowed, PathNotAllowedError } from "@automaker/platform";
-import { getErrorMessage, logError } from "../common.js";
+import type { Request, Response } from 'express';
+import * as secureFs from '../../../lib/secure-fs.js';
+import { PathNotAllowedError } from '@automaker/platform';
+import { getErrorMessage, logError } from '../common.js';
 
 export function createExistsHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -14,21 +13,18 @@ export function createExistsHandler() {
       const { filePath } = req.body as { filePath: string };
 
       if (!filePath) {
-        res.status(400).json({ success: false, error: "filePath is required" });
+        res.status(400).json({ success: false, error: 'filePath is required' });
         return;
       }
 
-      const resolvedPath = path.resolve(filePath);
-
-      // Validate that the path is allowed
-      if (!isPathAllowed(resolvedPath)) {
-        throw new PathNotAllowedError(filePath);
-      }
-
       try {
-        await fs.access(resolvedPath);
+        await secureFs.access(filePath);
         res.json({ success: true, exists: true });
-      } catch {
+      } catch (accessError) {
+        // Check if it's a path not allowed error vs file not existing
+        if (accessError instanceof PathNotAllowedError) {
+          throw accessError;
+        }
         res.json({ success: true, exists: false });
       }
     } catch (error) {
@@ -38,7 +34,7 @@ export function createExistsHandler() {
         return;
       }
 
-      logError(error, "Check exists failed");
+      logError(error, 'Check exists failed');
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

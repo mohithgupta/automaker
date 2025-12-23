@@ -8,19 +8,19 @@
  * - Path resolution (relative/absolute)
  */
 
-import { secureFs } from "@automaker/platform";
-import path from "path";
+import { secureFs } from '@automaker/platform';
+import path from 'path';
 import type { ImageData, ImageContentBlock } from '@automaker/types';
 
 /**
  * MIME type mapping for image file extensions
  */
 const IMAGE_MIME_TYPES: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
 } as const;
 
 /**
@@ -31,7 +31,7 @@ const IMAGE_MIME_TYPES: Record<string, string> = {
  */
 export function getMimeTypeForImage(imagePath: string): string {
   const ext = path.extname(imagePath).toLowerCase();
-  return IMAGE_MIME_TYPES[ext] || "image/png";
+  return IMAGE_MIME_TYPES[ext] || 'image/png';
 }
 
 /**
@@ -42,8 +42,8 @@ export function getMimeTypeForImage(imagePath: string): string {
  * @throws Error if file cannot be read
  */
 export async function readImageAsBase64(imagePath: string): Promise<ImageData> {
-  const imageBuffer = await secureFs.readFile(imagePath) as Buffer;
-  const base64Data = imageBuffer.toString("base64");
+  const imageBuffer = (await secureFs.readFile(imagePath)) as Buffer;
+  const base64Data = imageBuffer.toString('base64');
   const mimeType = getMimeTypeForImage(imagePath);
 
   return {
@@ -71,16 +71,15 @@ export async function convertImagesToContentBlocks(
   for (const imagePath of imagePaths) {
     try {
       // Resolve to absolute path if needed
-      const absolutePath = workDir && !path.isAbsolute(imagePath)
-        ? path.join(workDir, imagePath)
-        : imagePath;
+      const absolutePath =
+        workDir && !path.isAbsolute(imagePath) ? path.join(workDir, imagePath) : imagePath;
 
       const imageData = await readImageAsBase64(absolutePath);
 
       blocks.push({
-        type: "image",
+        type: 'image',
         source: {
-          type: "base64",
+          type: 'base64',
           media_type: imageData.mimeType,
           data: imageData.base64,
         },
@@ -103,10 +102,10 @@ export async function convertImagesToContentBlocks(
  */
 export function formatImagePathsForPrompt(imagePaths: string[]): string {
   if (imagePaths.length === 0) {
-    return "";
+    return '';
   }
 
-  let text = "\n\nAttached images:\n";
+  let text = '\n\nAttached images:\n';
   for (const imagePath of imagePaths) {
     text += `- ${imagePath}\n`;
   }

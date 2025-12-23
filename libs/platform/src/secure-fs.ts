@@ -6,10 +6,10 @@
  * not just at the API layer. This provides defense-in-depth security.
  */
 
-import fs from "fs/promises";
-import type { Dirent } from "fs";
-import path from "path";
-import { validatePath } from "./security.js";
+import fs from 'fs/promises';
+import type { Dirent } from 'fs';
+import path from 'path';
+import { validatePath } from './security.js';
 
 /**
  * Wrapper around fs.access that validates path first
@@ -108,11 +108,7 @@ export async function unlink(filePath: string): Promise<void> {
 /**
  * Wrapper around fs.copyFile that validates both paths first
  */
-export async function copyFile(
-  src: string,
-  dest: string,
-  mode?: number
-): Promise<void> {
+export async function copyFile(src: string, dest: string, mode?: number): Promise<void> {
   const validatedSrc = validatePath(src);
   const validatedDest = validatePath(dest);
   return fs.copyFile(validatedSrc, validatedDest, mode);
@@ -133,10 +129,7 @@ export async function appendFile(
 /**
  * Wrapper around fs.rename that validates both paths first
  */
-export async function rename(
-  oldPath: string,
-  newPath: string
-): Promise<void> {
+export async function rename(oldPath: string, newPath: string): Promise<void> {
   const validatedOldPath = validatePath(oldPath);
   const validatedNewPath = validatePath(newPath);
   return fs.rename(validatedOldPath, validatedNewPath);

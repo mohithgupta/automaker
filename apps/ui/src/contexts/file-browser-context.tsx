@@ -1,12 +1,5 @@
-
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  type ReactNode,
-} from "react";
-import { FileBrowserDialog } from "@/components/dialogs/file-browser-dialog";
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { FileBrowserDialog } from '@/components/dialogs/file-browser-dialog';
 
 interface FileBrowserOptions {
   title?: string;
@@ -22,21 +15,16 @@ const FileBrowserContext = createContext<FileBrowserContextValue | null>(null);
 
 export function FileBrowserProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [resolver, setResolver] = useState<
-    ((value: string | null) => void) | null
-  >(null);
+  const [resolver, setResolver] = useState<((value: string | null) => void) | null>(null);
   const [dialogOptions, setDialogOptions] = useState<FileBrowserOptions>({});
 
-  const openFileBrowser = useCallback(
-    (options?: FileBrowserOptions): Promise<string | null> => {
-      return new Promise((resolve) => {
-        setDialogOptions(options || {});
-        setIsOpen(true);
-        setResolver(() => resolve);
-      });
-    },
-    []
-  );
+  const openFileBrowser = useCallback((options?: FileBrowserOptions): Promise<string | null> => {
+    return new Promise((resolve) => {
+      setDialogOptions(options || {});
+      setIsOpen(true);
+      setResolver(() => resolve);
+    });
+  }, []);
 
   const handleSelect = useCallback(
     (path: string) => {
@@ -82,19 +70,15 @@ export function FileBrowserProvider({ children }: { children: ReactNode }) {
 export function useFileBrowser() {
   const context = useContext(FileBrowserContext);
   if (!context) {
-    throw new Error("useFileBrowser must be used within FileBrowserProvider");
+    throw new Error('useFileBrowser must be used within FileBrowserProvider');
   }
   return context;
 }
 
 // Global reference for non-React code (like HttpApiClient)
-let globalFileBrowserFn:
-  | ((options?: FileBrowserOptions) => Promise<string | null>)
-  | null = null;
+let globalFileBrowserFn: ((options?: FileBrowserOptions) => Promise<string | null>) | null = null;
 
-export function setGlobalFileBrowser(
-  fn: (options?: FileBrowserOptions) => Promise<string | null>
-) {
+export function setGlobalFileBrowser(fn: (options?: FileBrowserOptions) => Promise<string | null>) {
   globalFileBrowserFn = fn;
 }
 

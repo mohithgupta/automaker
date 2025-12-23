@@ -1,5 +1,5 @@
-import { Page, Locator } from "@playwright/test";
-import { waitForElement, waitForElementHidden } from "../core/waiting";
+import { Page, Locator } from '@playwright/test';
+import { waitForElement, waitForElementHidden } from '../core/waiting';
 
 /**
  * Check if the agent output modal is visible
@@ -16,7 +16,7 @@ export async function waitForAgentOutputModal(
   page: Page,
   options?: { timeout?: number }
 ): Promise<Locator> {
-  return await waitForElement(page, "agent-output-modal", options);
+  return await waitForElement(page, 'agent-output-modal', options);
 }
 
 /**
@@ -26,28 +26,22 @@ export async function waitForAgentOutputModalHidden(
   page: Page,
   options?: { timeout?: number }
 ): Promise<void> {
-  await waitForElementHidden(page, "agent-output-modal", options);
+  await waitForElementHidden(page, 'agent-output-modal', options);
 }
 
 /**
  * Get the modal title/description text to verify which feature's output is being shown
  */
-export async function getAgentOutputModalDescription(
-  page: Page
-): Promise<string | null> {
+export async function getAgentOutputModalDescription(page: Page): Promise<string | null> {
   const modal = page.locator('[data-testid="agent-output-modal"]');
-  const description = modal
-    .locator('[id="radix-\\:r.+\\:-description"]')
-    .first();
+  const description = modal.locator('[id="radix-\\:r.+\\:-description"]').first();
   return await description.textContent().catch(() => null);
 }
 
 /**
  * Check the dialog description content in the agent output modal
  */
-export async function getOutputModalDescription(
-  page: Page
-): Promise<string | null> {
+export async function getOutputModalDescription(page: Page): Promise<string | null> {
   const modalDescription = page.locator(
     '[data-testid="agent-output-modal"] [data-slot="dialog-description"]'
   );
@@ -57,18 +51,14 @@ export async function getOutputModalDescription(
 /**
  * Get the agent output modal description element
  */
-export async function getAgentOutputModalDescriptionElement(
-  page: Page
-): Promise<Locator> {
+export async function getAgentOutputModalDescriptionElement(page: Page): Promise<Locator> {
   return page.locator('[data-testid="agent-output-description"]');
 }
 
 /**
  * Check if the agent output modal description is scrollable
  */
-export async function isAgentOutputDescriptionScrollable(
-  page: Page
-): Promise<boolean> {
+export async function isAgentOutputDescriptionScrollable(page: Page): Promise<boolean> {
   const description = page.locator('[data-testid="agent-output-description"]');
   const scrollInfo = await description.evaluate((el) => {
     return {
@@ -83,9 +73,7 @@ export async function isAgentOutputDescriptionScrollable(
 /**
  * Get scroll dimensions of the agent output modal description
  */
-export async function getAgentOutputDescriptionScrollDimensions(
-  page: Page
-): Promise<{
+export async function getAgentOutputDescriptionScrollDimensions(page: Page): Promise<{
   scrollHeight: number;
   clientHeight: number;
   maxHeight: string;

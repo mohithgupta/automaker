@@ -1,25 +1,14 @@
-import { RefreshCw } from "lucide-react";
-import { useAppStore } from "@/store/app-store";
+import { RefreshCw } from 'lucide-react';
+import { useAppStore } from '@/store/app-store';
 
 // Extracted hooks
-import {
-  useSpecLoading,
-  useSpecSave,
-  useSpecGeneration,
-} from "./spec-view/hooks";
+import { useSpecLoading, useSpecSave, useSpecGeneration } from './spec-view/hooks';
 
 // Extracted components
-import {
-  SpecHeader,
-  SpecEditor,
-  SpecEmptyState,
-} from "./spec-view/components";
+import { SpecHeader, SpecEditor, SpecEmptyState } from './spec-view/components';
 
 // Extracted dialogs
-import {
-  CreateSpecDialog,
-  RegenerateSpecDialog,
-} from "./spec-view/dialogs";
+import { CreateSpecDialog, RegenerateSpecDialog } from './spec-view/dialogs';
 
 export function SpecView() {
   const { currentProject, appSpec } = useAppStore();
@@ -28,8 +17,7 @@ export function SpecView() {
   const { isLoading, specExists, loadSpec } = useSpecLoading();
 
   // Save state
-  const { isSaving, hasChanges, saveSpec, handleChange, setHasChanges } =
-    useSpecSave();
+  const { isSaving, hasChanges, saveSpec, handleChange, setHasChanges } = useSpecSave();
 
   // Generation state and handlers
   const {
@@ -79,10 +67,7 @@ export function SpecView() {
   // No project selected
   if (!currentProject) {
     return (
-      <div
-        className="flex-1 flex items-center justify-center"
-        data-testid="spec-view-no-project"
-      >
+      <div className="flex-1 flex items-center justify-center" data-testid="spec-view-no-project">
         <p className="text-muted-foreground">No project selected</p>
       </div>
     );
@@ -91,10 +76,7 @@ export function SpecView() {
   // Loading state
   if (isLoading) {
     return (
-      <div
-        className="flex-1 flex items-center justify-center"
-        data-testid="spec-view-loading"
-      >
+      <div className="flex-1 flex items-center justify-center" data-testid="spec-view-loading">
         <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -133,10 +115,7 @@ export function SpecView() {
 
   // Main view - spec exists
   return (
-    <div
-      className="flex-1 flex flex-col overflow-hidden content-bg"
-      data-testid="spec-view"
-    >
+    <div className="flex-1 flex flex-col overflow-hidden content-bg" data-testid="spec-view">
       <SpecHeader
         projectPath={currentProject.path}
         isRegenerating={isRegenerating}

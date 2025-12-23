@@ -1,5 +1,5 @@
-import { Feature } from "@/store/app-store";
-import { Button } from "@/components/ui/button";
+import { Feature } from '@/store/app-store';
+import { Button } from '@/components/ui/button';
 import {
   Edit,
   PlayCircle,
@@ -10,7 +10,7 @@ import {
   Eye,
   Wand2,
   Archive,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface CardActionsProps {
   feature: Feature;
@@ -52,7 +52,7 @@ export function CardActions({
       {isCurrentAutoTask && (
         <>
           {/* Approve Plan button - PRIORITY: shows even when agent is "running" (paused for approval) */}
-          {feature.planSpec?.status === "generated" && onApprovePlan && (
+          {feature.planSpec?.status === 'generated' && onApprovePlan && (
             <Button
               variant="default"
               size="sm"
@@ -109,10 +109,10 @@ export function CardActions({
           )}
         </>
       )}
-      {!isCurrentAutoTask && feature.status === "in_progress" && (
+      {!isCurrentAutoTask && feature.status === 'in_progress' && (
         <>
           {/* Approve Plan button - shows when plan is generated and waiting for approval */}
-          {feature.planSpec?.status === "generated" && onApprovePlan && (
+          {feature.planSpec?.status === 'generated' && onApprovePlan && (
             <Button
               variant="default"
               size="sm"
@@ -191,7 +191,7 @@ export function CardActions({
           )}
         </>
       )}
-      {!isCurrentAutoTask && feature.status === "verified" && (
+      {!isCurrentAutoTask && feature.status === 'verified' && (
         <>
           {/* Logs button */}
           {onViewOutput && (
@@ -229,7 +229,7 @@ export function CardActions({
           )}
         </>
       )}
-      {!isCurrentAutoTask && feature.status === "waiting_approval" && (
+      {!isCurrentAutoTask && feature.status === 'waiting_approval' && (
         <>
           {/* Refine prompt button */}
           {onFollowUp && (
@@ -282,7 +282,7 @@ export function CardActions({
           ) : null}
         </>
       )}
-      {!isCurrentAutoTask && feature.status === "backlog" && (
+      {!isCurrentAutoTask && feature.status === 'backlog' && (
         <>
           <Button
             variant="secondary"

@@ -1,15 +1,13 @@
-import { useCallback } from "react";
-import { Feature } from "@/store/app-store";
-import { getElectronAPI } from "@/lib/electron";
-import { useAppStore } from "@/store/app-store";
+import { useCallback } from 'react';
+import { Feature } from '@/store/app-store';
+import { getElectronAPI } from '@/lib/electron';
+import { useAppStore } from '@/store/app-store';
 
 interface UseBoardPersistenceProps {
   currentProject: { path: string; id: string } | null;
 }
 
-export function useBoardPersistence({
-  currentProject,
-}: UseBoardPersistenceProps) {
+export function useBoardPersistence({ currentProject }: UseBoardPersistenceProps) {
   const { updateFeature } = useAppStore();
 
   // Persist feature update to API (replaces saveFeatures)
@@ -20,20 +18,16 @@ export function useBoardPersistence({
       try {
         const api = getElectronAPI();
         if (!api.features) {
-          console.error("[BoardView] Features API not available");
+          console.error('[BoardView] Features API not available');
           return;
         }
 
-        const result = await api.features.update(
-          currentProject.path,
-          featureId,
-          updates
-        );
+        const result = await api.features.update(currentProject.path, featureId, updates);
         if (result.success && result.feature) {
           updateFeature(result.feature.id, result.feature);
         }
       } catch (error) {
-        console.error("Failed to persist feature update:", error);
+        console.error('Failed to persist feature update:', error);
       }
     },
     [currentProject, updateFeature]
@@ -47,7 +41,7 @@ export function useBoardPersistence({
       try {
         const api = getElectronAPI();
         if (!api.features) {
-          console.error("[BoardView] Features API not available");
+          console.error('[BoardView] Features API not available');
           return;
         }
 
@@ -56,7 +50,7 @@ export function useBoardPersistence({
           updateFeature(result.feature.id, result.feature);
         }
       } catch (error) {
-        console.error("Failed to persist feature creation:", error);
+        console.error('Failed to persist feature creation:', error);
       }
     },
     [currentProject, updateFeature]
@@ -70,13 +64,13 @@ export function useBoardPersistence({
       try {
         const api = getElectronAPI();
         if (!api.features) {
-          console.error("[BoardView] Features API not available");
+          console.error('[BoardView] Features API not available');
           return;
         }
 
         await api.features.delete(currentProject.path, featureId);
       } catch (error) {
-        console.error("Failed to persist feature deletion:", error);
+        console.error('Failed to persist feature deletion:', error);
       }
     },
     [currentProject]

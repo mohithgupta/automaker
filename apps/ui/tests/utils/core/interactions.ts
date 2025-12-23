@@ -1,12 +1,12 @@
-import { Page } from "@playwright/test";
-import { getByTestId, getButtonByText } from "./elements";
+import { Page } from '@playwright/test';
+import { getByTestId, getButtonByText } from './elements';
 
 /**
  * Get the platform-specific modifier key (Meta for Mac, Control for Windows/Linux)
  * This is used for keyboard shortcuts like Cmd+Enter or Ctrl+Enter
  */
-export function getPlatformModifier(): "Meta" | "Control" {
-  return process.platform === "darwin" ? "Meta" : "Control";
+export function getPlatformModifier(): 'Meta' | 'Control' {
+  return process.platform === 'darwin' ? 'Meta' : 'Control';
 }
 
 /**
@@ -28,10 +28,7 @@ export async function clickElement(page: Page, testId: string): Promise<void> {
 /**
  * Click a button by its text content
  */
-export async function clickButtonByText(
-  page: Page,
-  text: string
-): Promise<void> {
+export async function clickButtonByText(page: Page, text: string): Promise<void> {
   const button = await getButtonByText(page, text);
   await button.click();
 }
@@ -39,11 +36,7 @@ export async function clickButtonByText(
 /**
  * Fill an input field by its data-testid attribute
  */
-export async function fillInput(
-  page: Page,
-  testId: string,
-  value: string
-): Promise<void> {
+export async function fillInput(page: Page, testId: string, value: string): Promise<void> {
   const input = await getByTestId(page, testId);
   await input.fill(value);
 }
@@ -75,11 +68,11 @@ export async function focusOnInput(page: Page, testId: string): Promise<void> {
  * Waits for dialog to be removed from DOM rather than using arbitrary timeout
  */
 export async function closeDialogWithEscape(page: Page): Promise<void> {
-  await page.keyboard.press("Escape");
+  await page.keyboard.press('Escape');
   // Wait for any dialog overlay to disappear
   await page
     .locator('[data-radix-dialog-overlay], [role="dialog"]')
-    .waitFor({ state: "hidden", timeout: 5000 })
+    .waitFor({ state: 'hidden', timeout: 5000 })
     .catch(() => {
       // Dialog may have already closed or not exist
     });
