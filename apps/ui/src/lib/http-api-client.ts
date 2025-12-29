@@ -165,12 +165,18 @@ export class HttpApiClient implements ElectronAPI {
       headers: this.getHeaders(),
       body: body ? JSON.stringify(body) : undefined,
     });
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
+    }
     return response.json();
   }
 
   private async get<T>(endpoint: string): Promise<T> {
     const headers = this.getHeaders();
     const response = await fetch(`${this.serverUrl}${endpoint}`, { headers });
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
+    }
     return response.json();
   }
 
@@ -180,6 +186,9 @@ export class HttpApiClient implements ElectronAPI {
       headers: this.getHeaders(),
       body: body ? JSON.stringify(body) : undefined,
     });
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
+    }
     return response.json();
   }
 
@@ -188,6 +197,9 @@ export class HttpApiClient implements ElectronAPI {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
+    }
     return response.json();
   }
 

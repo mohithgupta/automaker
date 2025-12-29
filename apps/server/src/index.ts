@@ -153,6 +153,22 @@ app.use('/api/context', createContextRoutes());
 // Create HTTP server
 const server = createServer(app);
 
+// Enable dual-stack (IPv6 and IPv4) support
+// This allows the server to accept connections on both IPv6 (::) and IPv4 (127.0.0.1)
+server.on('listening', () => {
+  if (typeof server.address() === 'object' && (server.address() as any).family === 'IPv6') {
+    try {
+      server.getConnections((err, count) => {
+        if (!err && count !== undefined) {
+          console.log(`[Server] Dual-stack enabled: accepting IPv6 and IPv4 connections`);
+        }
+      });
+    } catch {
+      // Ignore errors
+    }
+  }
+});
+
 // WebSocket servers using noServer mode for proper multi-path support
 const wss = new WebSocketServer({ noServer: true });
 const terminalWss = new WebSocketServer({ noServer: true });
@@ -400,7 +416,9 @@ terminalWss.on('connection', (ws: WebSocket, req: import('http').IncomingMessage
 
 // Start server with error handling for port conflicts
 const startServer = (port: number) => {
-  server.listen(port, () => {
+  // Listen on both IPv6 and IPv4 (dual-stack)
+  // Using '::' allows accepting connections on both IPv6 and IPv4
+  server.listen(port, '::', () => {
     const terminalStatus = isTerminalEnabled()
       ? isTerminalPasswordRequired()
         ? 'enabled (password protected)'
@@ -431,7 +449,8 @@ const startServer = (port: number) => {
 ║  To fix this, try one of:                             ║
 ║                                                       ║
 ║  1. Kill the process using the port:                  ║
-║     lsof -ti:${port} | xargs kill -9                   ║
+║     netstat -ano | findstr :${port}                    ║
+║     taskkill /F /PID <PID>                            ║
 ║                                                       ║
 ║  2. Use a different port:                             ║
 ║     PORT=${port + 1} npm run dev:server                ║
